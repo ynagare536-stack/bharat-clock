@@ -1,0 +1,56 @@
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0f172a, #1e3a8a);
+  font-family: Arial, sans-serif;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.clock-card {
+  width: 80%;
+  max-width: 800px;
+  padding: 50px 30px;
+  border-radius: 25px;
+  text-align: center;
+
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(15px);
+
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+}
+
+.clock-heading {
+  color: white;
+  font-size: 48px;
+  font-weight: bold;
+}
+
+.clock-slogan {
+  color: #cbd5e1;
+  font-size: 18px;
+}
+
+.current-time {
+  color: white;
+  font-size: 55px;
+  font-weight: bold;
+  margin-top: 25px;
+}
+
+.current-date {
+  color: #cbd5e1;
+  font-size: 18px;
+  margin-top: 10px;
+}
+
+.clock-footer {
+  color: #67e8f9;
+  margin-top: 35px;
+}
