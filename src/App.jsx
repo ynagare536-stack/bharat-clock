@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, Globe, Calendar, Wrench, Bell, Settings, 
-  Palette, Search, Moon, Sun, Volume2, Maximize2, Play, 
-  RotateCcw, Pause, CheckCircle2, Clock, Hourglass, NotebookPen
+  Palette, Search, Moon, Clock, Hourglass, NotebookPen, RotateCcw
 } from 'lucide-react';
 import './App.css';
 
@@ -14,7 +13,7 @@ export default function App() {
   const [swTime, setSwTime] = useState(0);
   const [swRunning, setSwRunning] = useState(false);
 
-  // Clock Ticker
+  // Live Clock Ticker
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(timer);
@@ -91,10 +90,10 @@ export default function App() {
       </header>
 
       {/* 2. BODY LAYOUT */}
-      <div className="dashboard-grid flex-1">
+      <div className="flex gap-4 flex-1">
         
         {/* LEFT SIDEBAR */}
-        <aside className="glass-panel flex flex-col items-center justify-between py-6 neon-border-cyan">
+        <aside className="glass-panel hidden md:flex flex-col items-center justify-between py-6 px-3 neon-border-cyan w-20">
           <div className="flex flex-col items-center gap-6">
             <button className="p-3 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/40 shadow-lg shadow-cyan-500/20"><LayoutDashboard size={20} /></button>
             <button className="p-3 text-gray-400 hover:text-purple-400 transition"><Globe size={20} /></button>
@@ -112,13 +111,13 @@ export default function App() {
         </aside>
 
         {/* MAIN DASHBOARD */}
-        <div className="flex flex-col gap-4">
+        <div className="flex-1 flex flex-col gap-4">
           
           {/* TOP SECTION */}
-          <div className="main-content-grid">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             
-            {/* HERO CARD - DIGITAL CLOCK */}
-            <div className="glass-panel p-6 neon-border-cyan flex flex-col justify-between relative overflow-hidden">
+            {/* DIGITAL CLOCK CARD */}
+            <div className="glass-panel p-6 neon-border-cyan lg:col-span-2 flex flex-col justify-between">
               <div className="flex justify-between items-center text-xs text-cyan-400 font-tech">
                 <span className="tracking-widest flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-cyan-400"></span> INDIA STANDARD TIME (UTC +5:30)
@@ -127,11 +126,11 @@ export default function App() {
               </div>
 
               {/* CLOCK DIGITS */}
-              <div className="my-4 flex items-baseline gap-2">
-                <span className="font-digital text-7xl font-bold tracking-wider neon-text-pink">
+              <div className="my-6 flex items-baseline gap-2">
+                <span className="font-digital text-6xl md:text-7xl font-bold tracking-wider neon-text-pink">
                   {formattedHours}:{formattedMinutes}
                 </span>
-                <span className="font-digital text-6xl font-bold neon-text-green">
+                <span className="font-digital text-5xl md:text-6xl font-bold neon-text-green">
                   :{formattedSeconds}
                 </span>
                 {!is24Hour && (
@@ -143,15 +142,14 @@ export default function App() {
                 <span>📍 NEW DELHI, INDIA</span>
                 <span>TUESDAY, 25 AUGUST 2026</span>
                 
-                {/* 12H / 24H Toggle */}
                 <div className="flex items-center gap-1 bg-black/40 p-1 rounded-lg border border-white/10">
-                  <button onClick={() => setIs24Hour(false)} className={`px-2 py-0.5 rounded ${!is24Hour ? 'bg-purple-600 text-white' : 'text-gray-400'}`}>12H</button>
-                  <button onClick={() => setIs24Hour(true)} className={`px-2 py-0.5 rounded ${is24Hour ? 'bg-purple-600 text-white' : 'text-gray-400'}`}>24H</button>
+                  <button onClick={() => setIs24Hour(false)} className={`px-2 py-0.5 rounded text-xs ${!is24Hour ? 'bg-purple-600 text-white' : 'text-gray-400'}`}>12H</button>
+                  <button onClick={() => setIs24Hour(true)} className={`px-2 py-0.5 rounded text-xs ${is24Hour ? 'bg-purple-600 text-white' : 'text-gray-400'}`}>24H</button>
                 </div>
               </div>
             </div>
 
-            {/* CALENDAR MINI WIDGET */}
+            {/* CALENDAR MINI */}
             <div className="glass-panel p-4 neon-border-purple flex flex-col justify-between">
               <div className="flex justify-between items-center text-xs font-tech text-purple-300 mb-2">
                 <span className="flex items-center gap-1"><Calendar size={14} /> CALENDAR</span>
@@ -175,8 +173,8 @@ export default function App() {
 
           </div>
 
-          {/* MIDDLE SECTION */}
-          <div className="middle-row-grid">
+          {/* MIDDLE ROW */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             
             {/* WEATHER */}
             <div className="glass-panel p-4 neon-border-cyan flex flex-col justify-between">
@@ -226,25 +224,25 @@ export default function App() {
             <div className="glass-panel p-4 neon-border-purple">
               <div className="text-xs text-purple-300 mb-2 font-tech">🛠️ TOOLS</div>
               <div className="grid grid-cols-3 gap-2 text-center text-[10px]">
-                <div className="p-2 rounded bg-cyan-950/30 border border-cyan-500/30 text-cyan-300 flex flex-col items-center gap-1 cursor-pointer hover:scale-105 transition"><Clock size={16} />Stopwatch</div>
-                <div className="p-2 rounded bg-amber-950/30 border border-amber-500/30 text-amber-300 flex flex-col items-center gap-1 cursor-pointer hover:scale-105 transition"><Hourglass size={16} />Timer</div>
-                <div className="p-2 rounded bg-blue-950/30 border border-blue-500/30 text-blue-300 flex flex-col items-center gap-1 cursor-pointer hover:scale-105 transition"><Bell size={16} />Alarm</div>
-                <div className="p-2 rounded bg-pink-950/30 border border-pink-500/30 text-pink-300 flex flex-col items-center gap-1 cursor-pointer hover:scale-105 transition"><RotateCcw size={16} />Countdown</div>
-                <div className="p-2 rounded bg-red-950/30 border border-red-500/30 text-red-300 flex flex-col items-center gap-1 cursor-pointer hover:scale-105 transition">🍅 Pomodoro</div>
-                <div className="p-2 rounded bg-yellow-950/30 border border-yellow-500/30 text-yellow-300 flex flex-col items-center gap-1 cursor-pointer hover:scale-105 transition"><NotebookPen size={16} />Notes</div>
+                <div className="p-2 rounded bg-cyan-950/30 border border-cyan-500/30 text-cyan-300 flex flex-col items-center gap-1"><Clock size={14} />Stopwatch</div>
+                <div className="p-2 rounded bg-amber-950/30 border border-amber-500/30 text-amber-300 flex flex-col items-center gap-1"><Hourglass size={14} />Timer</div>
+                <div className="p-2 rounded bg-blue-950/30 border border-blue-500/30 text-blue-300 flex flex-col items-center gap-1"><Bell size={14} />Alarm</div>
+                <div className="p-2 rounded bg-pink-950/30 border border-pink-500/30 text-pink-300 flex flex-col items-center gap-1"><RotateCcw size={14} />Countdown</div>
+                <div className="p-2 rounded bg-red-950/30 border border-red-500/30 text-red-300 flex flex-col items-center gap-1">🍅 Pomodoro</div>
+                <div className="p-2 rounded bg-yellow-950/30 border border-yellow-500/30 text-yellow-300 flex flex-col items-center gap-1"><NotebookPen size={14} />Notes</div>
               </div>
             </div>
 
           </div>
 
-          {/* BOTTOM SECTION */}
-          <div className="bottom-row-grid">
+          {/* BOTTOM ROW */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             
             {/* STOPWATCH */}
             <div className="glass-panel p-4 neon-border-cyan flex flex-col justify-between">
               <div className="text-xs text-cyan-400 font-tech">⏱️ STOPWATCH</div>
               <div className="text-center my-2">
-                <span className="font-digital text-2xl text-cyan-300 tracking-wider">
+                <span className="font-digital text-xl text-cyan-300 tracking-wider">
                   {formatStopwatch()}
                 </span>
               </div>
@@ -268,8 +266,8 @@ export default function App() {
             <div className="glass-panel p-4 neon-border-purple flex flex-col justify-between">
               <div className="text-xs text-purple-400 font-tech">⏳ TIMER</div>
               <div className="flex justify-around items-center my-2">
-                <span className="font-digital text-2xl text-purple-300">00:25:00</span>
-                <span className="text-[10px] px-2 py-1 bg-purple-500/20 border border-purple-500 rounded-full text-purple-300">25:00</span>
+                <span className="font-digital text-xl text-purple-300">00:25:00</span>
+                <span className="text-[10px] px-2 py-0.5 bg-purple-500/20 border border-purple-500 rounded-full text-purple-300">25:00</span>
               </div>
               <div className="flex gap-2">
                 <button className="flex-1 py-1 rounded text-xs bg-orange-500/20 text-orange-300 border border-orange-500">Start</button>
@@ -283,19 +281,19 @@ export default function App() {
                 <span>🔔 ALARM</span>
                 <span className="text-[10px] cursor-pointer">+ Add</span>
               </div>
-              <div className="flex items-center justify-between bg-white/5 p-2 rounded">
+              <div className="flex items-center justify-between bg-white/5 p-1.5 rounded">
                 <div>
-                  <p className="font-digital text-sm text-green-300">07:00 AM</p>
+                  <p className="font-digital text-xs text-green-300">07:00 AM</p>
                   <p className="text-[9px] text-gray-400">Daily</p>
                 </div>
-                <input type="checkbox" defaultChecked className="toggle-checkbox accent-green-400 w-4 h-4 cursor-pointer" />
+                <input type="checkbox" defaultChecked className="accent-green-400 w-3.5 h-3.5" />
               </div>
-              <div className="flex items-center justify-between bg-white/5 p-2 rounded">
+              <div className="flex items-center justify-between bg-white/5 p-1.5 rounded">
                 <div>
-                  <p className="font-digital text-sm text-gray-300">08:30 AM</p>
+                  <p className="font-digital text-xs text-gray-300">08:30 AM</p>
                   <p className="text-[9px] text-gray-400">Mon, Tue, Wed</p>
                 </div>
-                <input type="checkbox" className="toggle-checkbox accent-green-400 w-4 h-4 cursor-pointer" />
+                <input type="checkbox" className="accent-green-400 w-3.5 h-3.5" />
               </div>
             </div>
 
@@ -308,7 +306,7 @@ export default function App() {
       {/* 4. FOOTER */}
       <footer className="glass-panel px-6 py-2 flex items-center justify-between text-xs text-gray-400 mt-3">
         <span>© 2026 Bharat Clock. All rights reserved. 🇮🇳</span>
-        <span className="text-yellow-400/90 font-tech italic">"समय सबसे कीमती दौलत है, इसे सही दिशा में निवेश करें।"</span>
+        <span className="text-yellow-400/90 font-tech italic text-[11px]">"समय सबसे कीमती दौलत है, इसे सही दिशा में निवेश करें।"</span>
         <span>Made with ❤️ in India</span>
       </footer>
 
