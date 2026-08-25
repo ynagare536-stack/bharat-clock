@@ -1,359 +1,328 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  LayoutDashboard, Globe, Calendar, Wrench, Bell, Settings, 
-  Palette, Search, Moon, Clock, Hourglass, NotebookPen, RotateCcw, X
-} from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
 
 export default function App() {
+  // Live Clock
   const [time, setTime] = useState(new Date());
   const [is24Hour, setIs24Hour] = useState(false);
-  
-  // Stopwatch States
+
+  // Stopwatch Logic
   const [swTime, setSwTime] = useState(0);
   const [swRunning, setSwRunning] = useState(false);
 
-  // Timer States
+  // Timer Logic
   const [timerSeconds, setTimerSeconds] = useState(25 * 60);
-  const [timerInitial, setTimerInitial] = useState(25 * 60);
   const [timerRunning, setTimerRunning] = useState(false);
 
-  // Alarm States
+  // Modals / Tools
+  const [activeModal, setActiveModal] = useState(null);
+  const [notes, setNotes] = useState('Aaj ke tasks:\n- Project complete karna\n- Neon UI test');
   const [alarms, setAlarms] = useState([
     { id: 1, time: '07:00 AM', label: 'Daily', enabled: true },
-    { id: 2, time: '08:30 AM', label: 'Mon, Tue, Wed', enabled: false }
+    { id: 2, time: '08:30 AM', label: 'Mon-Fri', enabled: false },
   ]);
 
-  // Notes State
-  const [notes, setNotes] = useState('Aaj ke tasks:\n- Project review\n- Workout at 6 PM');
-  
-  // Active Tool Modal View ('none' | 'notes' | 'pomodoro' | 'countdown' | 'addAlarm')
-  const [activeModal, setActiveModal] = useState(null);
-
-  // Clock Ticker
+  // Clock Update
   useEffect(() => {
-    const timer = setInterval(() => setTime(new Date()), 1000);
-    return () => clearInterval(timer);
+    const t = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(t);
   }, []);
 
   // Stopwatch Ticker
   useEffect(() => {
-    let interval;
+    let int = null;
     if (swRunning) {
-      interval = setInterval(() => setSwTime((prev) => prev + 10), 10);
+      int = setInterval(() => {
+        setSwTime((prev) => prev + 10);
+      }, 10);
     }
-    return () => clearInterval(interval);
+    return () => clearInterval(int);
   }, [swRunning]);
 
   // Timer Ticker
   useEffect(() => {
-    let interval;
+    let int = null;
     if (timerRunning && timerSeconds > 0) {
-      interval = setInterval(() => setTimerSeconds((prev) => prev - 1), 1000);
+      int = setInterval(() => {
+        setTimerSeconds((prev) => prev - 1);
+      }, 1000);
     } else if (timerSeconds === 0 && timerRunning) {
       setTimerRunning(false);
-      alert("⏰ Timer Done!");
+      alert('⏰ Timer Time Over!');
     }
-    return () => clearInterval(interval);
+    return () => clearInterval(int);
   }, [timerRunning, timerSeconds]);
 
-  const formatStopwatch = () => {
-    const ms = `00${swTime % 1000}`.slice(-3);
-    const sec = `0${Math.floor((swTime / 1000) % 60)}`.slice(-2);
-    const min = `0${Math.floor((swTime / 60000) % 60)}`.slice(-2);
-    const hr = `0${Math.floor(swTime / 3600000)}`.slice(-2);
-    return `${hr}:${min}:${sec}.${ms}`;
+  // Format Stopwatch Time
+  const getFormattedSW = () => {
+    const ms = String(Math.floor((swTime % 1000) / 10)).padStart(2, '0');
+    const sec = String(Math.floor((swTime / 1000) % 60)).padStart(2, '0');
+    const min = String(Math.floor((swTime / 60000) % 60)).padStart(2, '0');
+    return `${min}:${sec}.${ms}`;
   };
 
-  const formatTimer = (totalSec) => {
-    const hrs = `0${Math.floor(totalSec / 3600)}`.slice(-2);
-    const mins = `0${Math.floor((totalSec % 3600) / 60)}`.slice(-2);
-    const secs = `0${totalSec % 60}`.slice(-2);
-    return `${hrs}:${mins}:${secs}`;
-  };
-
-  const handleToolClick = (toolName) => {
-    if (toolName === 'stopwatch') {
-      const el = document.getElementById('stopwatch-widget');
-      el?.scrollIntoView({ behavior: 'smooth' });
-      setSwRunning(true);
-    } else if (toolName === 'timer') {
-      const el = document.getElementById('timer-widget');
-      el?.scrollIntoView({ behavior: 'smooth' });
-      setTimerRunning(true);
-    } else if (toolName === 'pomodoro') {
-      setTimerRunning(false);
-      setTimerSeconds(25 * 60);
-      setTimerInitial(25 * 60);
-      setTimerRunning(true);
-    } else {
-      setActiveModal(toolName);
-    }
+  // Format Timer Time
+  const getFormattedTimer = () => {
+    const min = String(Math.floor(timerSeconds / 60)).padStart(2, '0');
+    const sec = String(timerSeconds % 60).padStart(2, '0');
+    return `${min}:${sec}`;
   };
 
   const hours = time.getHours();
-  const formattedHours = is24Hour ? `0${hours}`.slice(-2) : `0${hours % 12 || 12}`.slice(-2);
-  const formattedMinutes = `0${time.getMinutes()}`.slice(-2);
-  const formattedSeconds = `0${time.getSeconds()}`.slice(-2);
+  const formattedHours = is24Hour ? String(hours).padStart(2, '0') : String(hours % 12 || 12).padStart(2, '0');
+  const formattedMinutes = String(time.getMinutes()).padStart(2, '0');
+  const formattedSeconds = String(time.getSeconds()).padStart(2, '0');
   const ampm = hours >= 12 ? 'PM' : 'AM';
 
   return (
-    <div className="min-h-screen bg-[#050711] text-white flex flex-col justify-between p-3 select-none relative">
+    <div style={{ minHeight: '100vh', backgroundColor: '#050711', color: '#fff', padding: '12px', boxSizing: 'border-box', fontFamily: 'Inter, sans-serif' }}>
       
       {/* 1. TOP NAVBAR */}
-      <header className="glass-panel px-6 py-2.5 flex items-center justify-between neon-border-purple mb-3">
-        <div className="flex items-center gap-3">
-          <span className="text-2xl">🇮🇳</span>
+      <header className="glass-panel" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 24px', marginBottom: '14px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <span style={{ fontSize: '24px' }}>🇮🇳</span>
           <div>
-            <h1 className="text-lg font-bold font-tech tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-white to-green-400">
-              भारत CLOCK
-            </h1>
-            <p className="text-[10px] text-gray-400">Made in India ❤️</p>
+            <h1 className="font-tech" style={{ fontSize: '20px', fontWeight: 'bold', margin: 0, color: '#00f0ff' }}>भारत CLOCK</h1>
+            <span style={{ fontSize: '10px', color: '#94a3b8' }}>Made in India ❤️</span>
           </div>
         </div>
 
-        <nav className="hidden md:flex items-center gap-6 text-sm">
-          <button className="flex items-center gap-2 text-cyan-400 px-3 py-1 rounded-full bg-cyan-950/40 border border-cyan-500/30">
-            <LayoutDashboard size={15} /> Home
-          </button>
-          <button onClick={() => alert("World clock list up to date")} className="flex items-center gap-2 text-gray-400 hover:text-white transition">
-            <Globe size={15} /> World Clock
-          </button>
-          <button onClick={() => alert("Today: August 2026")} className="flex items-center gap-2 text-gray-400 hover:text-white transition">
-            <Calendar size={15} /> Calendar
-          </button>
-          <button onClick={() => handleToolClick('notes')} className="flex items-center gap-2 text-gray-400 hover:text-white transition">
-            <NotebookPen size={15} /> Notes
-          </button>
-          <button className="flex items-center gap-2 text-gray-400 hover:text-white transition">
-            <Bell size={15} /> Alarm
-          </button>
-        </nav>
-
-        <div className="flex items-center gap-2">
-          <button onClick={() => setIs24Hour(!is24Hour)} className="text-xs px-2.5 py-1 rounded-lg bg-slate-800 border border-white/10 text-cyan-300">
-            {is24Hour ? '24H' : '12H'}
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button 
+            onClick={() => setIs24Hour(!is24Hour)} 
+            style={{ padding: '6px 14px', background: '#1e1b4b', border: '1px solid #6366f1', color: '#c7d2fe', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
+            {is24Hour ? 'Switch to 12H' : 'Switch to 24H'}
           </button>
         </div>
       </header>
 
-      {/* 2. BODY LAYOUT */}
-      <div className="flex gap-3 flex-1">
+      {/* 2. MAIN DASHBOARD GRID */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '14px' }}>
         
-        {/* LEFT SIDEBAR */}
-        <aside className="glass-panel hidden md:flex flex-col items-center justify-between py-4 px-2 neon-border-cyan w-16">
-          <div className="flex flex-col items-center gap-5">
-            <button className="p-2 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/40"><LayoutDashboard size={18} /></button>
-            <button onClick={() => handleToolClick('stopwatch')} className="p-2 text-gray-400 hover:text-cyan-400"><Clock size={18} /></button>
-            <button onClick={() => handleToolClick('timer')} className="p-2 text-gray-400 hover:text-amber-400"><Hourglass size={18} /></button>
-            <button onClick={() => handleToolClick('notes')} className="p-2 text-gray-400 hover:text-yellow-400"><NotebookPen size={18} /></button>
-            <button onClick={() => handleToolClick('addAlarm')} className="p-2 text-gray-400 hover:text-green-400"><Bell size={18} /></button>
+        {/* HERO CLOCK */}
+        <div className="glass-panel neon-border-cyan" style={{ gridColumn: 'span 2', padding: '24px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#00f0ff' }}>
+            <span>⚡ INDIA STANDARD TIME (UTC +5:30)</span>
+            <span style={{ background: '#052e16', border: '1px solid #22c55e', color: '#4ade80', padding: '2px 8px', borderRadius: '12px' }}>● LIVE</span>
           </div>
-          <div className="text-[9px] flex flex-col items-center text-green-400 font-tech">
-            <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse mb-1"></span>
-            LIVE
+
+          <div style={{ margin: '20px 0', display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+            <span className="font-digital neon-text-pink" style={{ fontSize: '64px', fontWeight: '900' }}>
+              {formattedHours}:{formattedMinutes}
+            </span>
+            <span className="font-digital neon-text-green" style={{ fontSize: '50px', fontWeight: 'bold' }}>
+              :{formattedSeconds}
+            </span>
+            {!is24Hour && <span className="font-digital" style={{ fontSize: '22px', color: '#00f0ff', marginLeft: '10px' }}>{ampm}</span>}
           </div>
-        </aside>
 
-        {/* MAIN DASHBOARD */}
-        <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-3">
-          
-          {/* BIG CLOCK */}
-          <div className="glass-panel p-5 neon-border-cyan md:col-span-2 flex flex-col justify-between">
-            <div className="flex justify-between items-center text-xs text-cyan-400 font-tech">
-              <span className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span> INDIA STANDARD TIME (UTC +5:30)
-              </span>
-              <span className="px-2 py-0.5 rounded bg-green-950/80 border border-green-500/40 text-green-400 text-[10px]">● LIVE</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '12px', fontSize: '13px', color: '#cbd5e1' }}>
+            <span>📍 NEW DELHI, INDIA</span>
+            <span>TUESDAY, 25 AUGUST 2026</span>
+          </div>
+        </div>
+
+        {/* CALENDAR */}
+        <div className="glass-panel neon-border-purple" style={{ padding: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#c084fc', marginBottom: '10px' }}>
+            <span>📅 CALENDAR</span>
+            <span>AUGUST 2026</span>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px', textAlign: 'center', fontSize: '11px', color: '#94a3b8' }}>
+            <span style={{ color: '#f87171' }}>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
+            <span>26</span><span>27</span><span>28</span><span>29</span><span>30</span><span>31</span><span>1</span>
+            <span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span>
+            <span>9</span><span>10</span><span>11</span><span>12</span><span>13</span><span>14</span><span>15</span>
+            <span>16</span><span>17</span><span>18</span><span>19</span><span>20</span><span>21</span><span>22</span>
+            <span>23</span><span>24</span>
+            <span style={{ background: '#22c55e33', border: '1px solid #4ade80', color: '#4ade80', borderRadius: '4px', fontWeight: 'bold' }}>25</span>
+            <span>26</span><span>27</span><span>28</span><span>29</span>
+          </div>
+        </div>
+
+        {/* WEATHER */}
+        <div className="glass-panel neon-border-cyan" style={{ padding: '18px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#facc15' }}>
+            <span>☀️ WEATHER</span>
+            <span style={{ color: '#94a3b8' }}>New Delhi</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '14px 0' }}>
+            <span className="font-digital" style={{ fontSize: '38px', color: '#fef08a' }}>28°C</span>
+            <div style={{ fontSize: '11px', color: '#94a3b8', textAlign: 'right' }}>
+              <div>Humidity: 58%</div>
+              <div>Wind: 12 km/h</div>
+              <div>Clear Sky</div>
             </div>
+          </div>
+        </div>
 
-            <div className="my-3 flex items-baseline gap-1">
-              <span className="font-digital text-6xl md:text-7xl font-bold tracking-wider neon-text-pink">
-                {formattedHours}:{formattedMinutes}
-              </span>
-              <span className="font-digital text-5xl md:text-6xl font-bold neon-text-green">
-                :{formattedSeconds}
-              </span>
-              {!is24Hour && (
-                <span className="font-digital text-xl text-cyan-400 ml-2">{ampm}</span>
-              )}
+        {/* QUICK TOOLS (ALL WORKING DIRECT CLICKS) */}
+        <div className="glass-panel neon-border-purple" style={{ padding: '18px' }}>
+          <div style={{ fontSize: '13px', color: '#c084fc', marginBottom: '10px' }}>🛠️ TOOLS (Click to Run)</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', fontSize: '11px', textAlign: 'center' }}>
+            
+            <button 
+              onClick={() => setSwRunning(!swRunning)} 
+              style={{ padding: '10px 4px', background: '#083344', border: '1px solid #06b6d4', color: '#67e8f9', borderRadius: '8px', cursor: 'pointer' }}>
+              ⏱️ {swRunning ? 'Pause SW' : 'Start SW'}
+            </button>
+
+            <button 
+              onClick={() => setTimerRunning(!timerRunning)} 
+              style={{ padding: '10px 4px', background: '#451a03', border: '1px solid #f59e0b', color: '#fde68a', borderRadius: '8px', cursor: 'pointer' }}>
+              ⏳ {timerRunning ? 'Pause TR' : 'Start TR'}
+            </button>
+
+            <button 
+              onClick={() => setActiveModal('notes')} 
+              style={{ padding: '10px 4px', background: '#3b0764', border: '1px solid #a855f7', color: '#e9d5ff', borderRadius: '8px', cursor: 'pointer' }}>
+              📝 Notes
+            </button>
+
+            <button 
+              onClick={() => { setTimerRunning(false); setTimerSeconds(25 * 60); setTimerRunning(true); }} 
+              style={{ padding: '10px 4px', background: '#450a0a', border: '1px solid #ef4444', color: '#fca5a5', borderRadius: '8px', cursor: 'pointer' }}>
+              🍅 Pomodoro
+            </button>
+
+            <button 
+              onClick={() => setActiveModal('countdown')} 
+              style={{ padding: '10px 4px', background: '#500724', border: '1px solid #ec4899', color: '#fbcfe8', borderRadius: '8px', cursor: 'pointer' }}>
+              🔄 Count Set
+            </button>
+
+            <button 
+              onClick={() => setActiveModal('alarm')} 
+              style={{ padding: '10px 4px', background: '#022c22', border: '1px solid #10b981', color: '#a7f3d0', borderRadius: '8px', cursor: 'pointer' }}>
+              🔔 Add Alarm
+            </button>
+          </div>
+        </div>
+
+        {/* STOPWATCH CONTROLLER */}
+        <div className="glass-panel neon-border-cyan" style={{ padding: '18px' }}>
+          <div style={{ fontSize: '13px', color: '#00f0ff', marginBottom: '8px' }}>⏱️ STOPWATCH</div>
+          <div className="font-digital" style={{ fontSize: '28px', color: '#67e8f9', textAlign: 'center', margin: '10px 0' }}>
+            {getFormattedSW()}
+          </div>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button 
+              onClick={() => setSwRunning(!swRunning)} 
+              style={{ flex: 1, padding: '8px', background: swRunning ? '#7f1d1d' : '#14532d', border: `1px solid ${swRunning ? '#ef4444' : '#22c55e'}`, color: '#fff', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
+              {swRunning ? 'Pause' : 'Start'}
+            </button>
+            <button 
+              onClick={() => { setSwRunning(false); setSwTime(0); }} 
+              style={{ padding: '8px 16px', background: '#334155', border: '1px solid #64748b', color: '#fff', borderRadius: '6px', cursor: 'pointer' }}>
+              Reset
+            </button>
+          </div>
+        </div>
+
+        {/* COUNTDOWN TIMER CONTROLLER */}
+        <div className="glass-panel neon-border-purple" style={{ padding: '18px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px', color: '#c084fc' }}>
+            <span>⏳ TIMER</span>
+            <div style={{ display: 'flex', gap: '4px' }}>
+              <button onClick={() => { setTimerRunning(false); setTimerSeconds(15 * 60); }} style={{ padding: '2px 6px', fontSize: '10px', background: '#581c87', border: '1px solid #a855f7', color: '#fff', borderRadius: '4px', cursor: 'pointer' }}>15m</button>
+              <button onClick={() => { setTimerRunning(false); setTimerSeconds(25 * 60); }} style={{ padding: '2px 6px', fontSize: '10px', background: '#581c87', border: '1px solid #a855f7', color: '#fff', borderRadius: '4px', cursor: 'pointer' }}>25m</button>
+              <button onClick={() => { setTimerRunning(false); setTimerSeconds(30 * 60); }} style={{ padding: '2px 6px', fontSize: '10px', background: '#581c87', border: '1px solid #a855f7', color: '#fff', borderRadius: '4px', cursor: 'pointer' }}>30m</button>
             </div>
+          </div>
 
-            <div className="flex items-center justify-between text-xs text-gray-300 font-tech border-t border-white/10 pt-2">
-              <span>📍 NEW DELHI, INDIA</span>
-              <span>TUESDAY, 25 AUGUST 2026</span>
-              <div className="flex items-center gap-1 bg-black/40 p-1 rounded border border-white/10">
-                <button onClick={() => setIs24Hour(false)} className={`px-2 py-0.5 rounded text-xs ${!is24Hour ? 'bg-purple-600 text-white' : 'text-gray-400'}`}>12H</button>
-                <button onClick={() => setIs24Hour(true)} className={`px-2 py-0.5 rounded text-xs ${is24Hour ? 'bg-purple-600 text-white' : 'text-gray-400'}`}>24H</button>
+          <div className="font-digital" style={{ fontSize: '28px', color: '#e9d5ff', textAlign: 'center', margin: '10px 0' }}>
+            {getFormattedTimer()}
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button 
+              onClick={() => setTimerRunning(!timerRunning)} 
+              style={{ flex: 1, padding: '8px', background: timerRunning ? '#7c2d12' : '#c2410c', border: '1px solid #fb923c', color: '#fff', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
+              {timerRunning ? 'Pause' : 'Start'}
+            </button>
+            <button 
+              onClick={() => { setTimerRunning(false); setTimerSeconds(25 * 60); }} 
+              style={{ padding: '8px 16px', background: '#334155', border: '1px solid #64748b', color: '#fff', borderRadius: '6px', cursor: 'pointer' }}>
+              Reset
+            </button>
+          </div>
+        </div>
+
+        {/* ALARMS */}
+        <div className="glass-panel neon-border-green" style={{ padding: '18px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#4ade80', marginBottom: '8px' }}>
+            <span>🔔 ALARM</span>
+            <span onClick={() => setActiveModal('alarm')} style={{ cursor: 'pointer', textDecoration: 'underline' }}>+ Add</span>
+          </div>
+          {alarms.map((al) => (
+            <div key={al.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.05)', padding: '6px 10px', borderRadius: '6px', marginBottom: '6px' }}>
+              <div>
+                <span className="font-digital" style={{ fontSize: '13px', color: al.enabled ? '#4ade80' : '#64748b' }}>{al.time}</span>
+                <div style={{ fontSize: '9px', color: '#94a3b8' }}>{al.label}</div>
               </div>
+              <input 
+                type="checkbox" 
+                checked={al.enabled} 
+                onChange={() => setAlarms(alarms.map(a => a.id === al.id ? { ...a, enabled: !a.enabled } : a))} 
+                style={{ cursor: 'pointer' }}
+              />
             </div>
-          </div>
-
-          {/* CALENDAR */}
-          <div className="glass-panel p-4 neon-border-purple flex flex-col justify-between">
-            <div className="flex justify-between items-center text-xs font-tech text-purple-300 mb-1">
-              <span className="flex items-center gap-1"><Calendar size={13} /> CALENDAR</span>
-              <span>AUGUST 2026</span>
-            </div>
-            <div className="grid grid-cols-7 gap-1 text-center text-[10px] text-gray-400 font-tech">
-              <span className="text-red-400">S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
-              <span className="p-0.5">26</span><span className="p-0.5">27</span><span className="p-0.5">28</span><span className="p-0.5">29</span><span className="p-0.5">30</span><span className="p-0.5">31</span><span className="p-0.5">1</span>
-              <span className="p-0.5">2</span><span className="p-0.5">3</span><span className="p-0.5">4</span><span className="p-0.5">5</span><span className="p-0.5">6</span><span className="p-0.5">7</span><span className="p-0.5">8</span>
-              <span className="p-0.5">9</span><span className="p-0.5">10</span><span className="p-0.5">11</span><span className="p-0.5">12</span><span className="p-0.5">13</span><span className="p-0.5">14</span><span className="p-0.5">15</span>
-              <span className="p-0.5">16</span><span className="p-0.5">17</span><span className="p-0.5">18</span><span className="p-0.5">19</span><span className="p-0.5">20</span><span className="p-0.5">21</span><span className="p-0.5">22</span>
-              <span className="p-0.5">23</span><span className="p-0.5">24</span>
-              <span className="p-0.5 bg-green-500/20 text-green-300 border border-green-400 rounded font-bold">25</span>
-              <span className="p-0.5">26</span><span className="p-0.5">27</span><span className="p-0.5">28</span><span className="p-0.5">29</span>
-            </div>
-            <div className="text-[10px] text-gray-400 border-t border-white/10 pt-1.5 flex justify-between">
-              <span>Today: 25 Aug</span>
-              <span onClick={() => handleToolClick('notes')} className="text-cyan-400 cursor-pointer">+ Add Note</span>
-            </div>
-          </div>
-
-          {/* WEATHER */}
-          <div className="glass-panel p-4 neon-border-cyan flex flex-col justify-between">
-            <div className="flex justify-between items-center text-xs text-yellow-400">
-              <span>☀️ WEATHER</span>
-              <span className="text-gray-400 text-[10px]">New Delhi</span>
-            </div>
-            <div className="flex items-center justify-between my-2">
-              <span className="text-4xl font-digital text-yellow-300">28°C</span>
-              <div className="text-[10px] text-gray-400 text-right">
-                <p>Humidity: 58%</p>
-                <p>Wind: 12 km/h</p>
-                <p>Clear Sky</p>
-              </div>
-            </div>
-            <div className="flex justify-between text-[9px] text-gray-400 border-t border-white/10 pt-1.5">
-              <span>WED: 32°</span><span>THU: 31°</span><span>FRI: 30°</span><span>SAT: 31°</span>
-            </div>
-          </div>
-
-          {/* WORLD CLOCK */}
-          <div className="glass-panel p-4 neon-border-green flex flex-col justify-between">
-            <div className="flex justify-between items-center text-xs text-green-400 mb-1 font-tech">
-              <span>🌐 WORLD CLOCK</span>
-              <span onClick={() => alert("Global time zones synced")} className="text-[10px] text-gray-400 cursor-pointer">+ Sync</span>
-            </div>
-            <div className="flex flex-col gap-1.5 text-xs">
-              <div className="flex justify-between items-center bg-white/5 p-1 rounded">
-                <span>🇺🇸 New York</span>
-                <span className="font-digital text-cyan-300">11:15 PM</span>
-              </div>
-              <div className="flex justify-between items-center bg-white/5 p-1 rounded">
-                <span>🇬🇧 London</span>
-                <span className="font-digital text-purple-300">04:15 AM</span>
-              </div>
-              <div className="flex justify-between items-center bg-white/5 p-1 rounded">
-                <span>🇯🇵 Tokyo</span>
-                <span className="font-digital text-pink-300">12:15 PM</span>
-              </div>
-            </div>
-          </div>
-
-          {/* QUICK TOOLS (ALL 6 FULLY FUNCTIONAL) */}
-          <div className="glass-panel p-4 neon-border-purple flex flex-col justify-between">
-            <div className="text-xs text-purple-300 mb-1 font-tech">🛠️ TOOLS (Click to open)</div>
-            <div className="grid grid-cols-3 gap-1.5 text-center text-[10px]">
-              <div onClick={() => handleToolClick('stopwatch')} className="p-1.5 rounded bg-cyan-950/40 border border-cyan-500/40 text-cyan-300 flex flex-col items-center cursor-pointer hover:scale-105 active:scale-95 transition"><Clock size={14} />Stopwatch</div>
-              <div onClick={() => handleToolClick('timer')} className="p-1.5 rounded bg-amber-950/40 border border-amber-500/40 text-amber-300 flex flex-col items-center cursor-pointer hover:scale-105 active:scale-95 transition"><Hourglass size={14} />Timer</div>
-              <div onClick={() => handleToolClick('addAlarm')} className="p-1.5 rounded bg-blue-950/40 border border-blue-500/40 text-blue-300 flex flex-col items-center cursor-pointer hover:scale-105 active:scale-95 transition"><Bell size={14} />Alarm</div>
-              <div onClick={() => handleToolClick('countdown')} className="p-1.5 rounded bg-pink-950/40 border border-pink-500/40 text-pink-300 flex flex-col items-center cursor-pointer hover:scale-105 active:scale-95 transition"><RotateCcw size={14} />Countdown</div>
-              <div onClick={() => handleToolClick('pomodoro')} className="p-1.5 rounded bg-red-950/40 border border-red-500/40 text-red-300 flex flex-col items-center cursor-pointer hover:scale-105 active:scale-95 transition">🍅 Pomodoro</div>
-              <div onClick={() => handleToolClick('notes')} className="p-1.5 rounded bg-yellow-950/40 border border-yellow-500/40 text-yellow-300 flex flex-col items-center cursor-pointer hover:scale-105 active:scale-95 transition"><NotebookPen size={14} />Notes</div>
-            </div>
-          </div>
-
-          {/* STOPWATCH */}
-          <div id="stopwatch-widget" className="glass-panel p-4 neon-border-cyan flex flex-col justify-between">
-            <div className="text-xs text-cyan-400 font-tech">⏱️ STOPWATCH</div>
-            <div className="text-center my-2">
-              <span className="font-digital text-xl text-cyan-300 tracking-wider">
-                {formatStopwatch()}
-              </span>
-            </div>
-            <div className="flex gap-2">
-              <button 
-                onClick={() => setSwRunning(!swRunning)} 
-                className={`flex-1 py-1 rounded text-xs font-semibold cursor-pointer transition ${swRunning ? 'bg-red-500/20 text-red-300 border border-red-500' : 'bg-green-500/20 text-green-300 border border-green-500'}`}
-              >
-                {swRunning ? 'Pause' : 'Start'}
-              </button>
-              <button 
-                onClick={() => { setSwRunning(false); setSwTime(0); }} 
-                className="px-3 py-1 rounded text-xs bg-slate-700/40 text-gray-300 border border-white/10 hover:bg-slate-600/40 cursor-pointer"
-              >
-                Reset
-              </button>
-            </div>
-          </div>
-
-          {/* TIMER */}
-          <div id="timer-widget" className="glass-panel p-4 neon-border-purple flex flex-col justify-between">
-            <div className="flex justify-between items-center text-xs text-purple-400 font-tech">
-              <span>⏳ TIMER</span>
-              <div className="flex gap-1 text-[9px]">
-                <button onClick={() => { setTimerRunning(false); setTimerSeconds(15*60); setTimerInitial(15*60); }} className="px-1.5 py-0.5 rounded bg-purple-900/40 text-purple-200 border border-purple-500/30">15m</button>
-                <button onClick={() => { setTimerRunning(false); setTimerSeconds(25*60); setTimerInitial(25*60); }} className="px-1.5 py-0.5 rounded bg-purple-900/40 text-purple-200 border border-purple-500/30">25m</button>
-                <button onClick={() => { setTimerRunning(false); setTimerSeconds(30*60); setTimerInitial(30*60); }} className="px-1.5 py-0.5 rounded bg-purple-900/40 text-purple-200 border border-purple-500/30">30m</button>
-              </div>
-            </div>
-
-            <div className="flex justify-around items-center my-2">
-              <span className="font-digital text-xl text-purple-300">
-                {formatTimer(timerSeconds)}
-              </span>
-              <span className="text-[10px] px-2 py-0.5 bg-purple-500/20 border border-purple-500 rounded-full text-purple-300 font-digital">
-                {Math.ceil(timerSeconds / 60)}:00
-              </span>
-            </div>
-
-            <div className="flex gap-2">
-              <button 
-                onClick={() => setTimerRunning(!timerRunning)} 
-                className={`flex-1 py-1 rounded text-xs font-semibold cursor-pointer transition ${timerRunning ? 'bg-amber-500/20 text-amber-300 border border-amber-500' : 'bg-orange-500/20 text-orange-300 border border-orange-500'}`}
-              >
-                {timerRunning ? 'Pause' : 'Start'}
-              </button>
-              <button 
-                onClick={() => { setTimerRunning(false); setTimerSeconds(timerInitial); }} 
-                className="px-3 py-1 rounded text-xs bg-slate-700/40 text-gray-300 border border-white/10 hover:bg-slate-600/40 cursor-pointer"
-              >
-                Reset
-              </button>
-            </div>
-          </div>
-
-          {/* ALARM */}
-          <div className="glass-panel p-4 neon-border-green flex flex-col justify-between">
-            <div className="flex justify-between items-center text-xs text-green-400 font-tech">
-              <span>🔔 ALARM</span>
-              <span onClick={() => handleToolClick('addAlarm')} className="text-[10px] cursor-pointer hover:underline">+ Add</span>
-            </div>
-            {alarms.map((alarm) => (
-              <div key={alarm.id} className="flex items-center justify-between bg-white/5 p-1.5 rounded mb-1">
-                <div>
-                  <p className={`font-digital text-xs ${alarm.enabled ? 'text-green-300' : 'text-gray-500'}`}>{alarm.time}</p>
-                  <p className="text-[9px] text-gray-400">{alarm.label}</p>
-                </div>
-                <input 
-                  type="checkbox" 
-                  checked={alarm.enabled} 
-                  onChange={() => {
-                    setAlarms(alarms.map(a => a.id === alarm.id ? { ...a, enabled: !a.enabled } : a));
-                  }} 
-                  className="accent-green-400 w-3.5 h-3.5 cursor-pointer" 
-                />
-              </div>
-            ))}
-          </div>
-
+          ))}
         </div>
 
       </div>
 
-      {/* 3. MODALS FOR TOOLS (Notes, Pomodoro, Alarm Add) */}
+      {/* MODAL POPUPS */}
       {activeModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="glass-panel neon-border-purple
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
+          <div className="glass-panel neon-border-purple" style={{ padding: '24px', width: '90%', maxWidth: '400px', background: '#0b0f19' }}>
+            
+            {activeModal === 'notes' && (
+              <div>
+                <h3 style={{ margin: '0 0 10px 0', color: '#facc15' }}>📝 Quick Notes</h3>
+                <textarea 
+                  value={notes} 
+                  onChange={(e) => setNotes(e.target.value)} 
+                  style={{ width: '100%', height: '120px', background: '#000', color: '#fff', border: '1px solid #ca8a04', borderRadius: '6px', padding: '8px', boxSizing: 'border-box' }}
+                />
+                <button onClick={() => setActiveModal(null)} style={{ marginTop: '10px', width: '100%', padding: '8px', background: '#ca8a04', border: 'none', color: '#000', fontWeight: 'bold', borderRadius: '6px', cursor: 'pointer' }}>Close & Save</button>
+              </div>
+            )}
+
+            {activeModal === 'countdown' && (
+              <div>
+                <h3 style={{ margin: '0 0 10px 0', color: '#ec4899' }}>🔄 Choose Countdown Duration</h3>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', margin: '15px 0' }}>
+                  {[5, 10, 20, 30, 45, 60].map(m => (
+                    <button key={m} onClick={() => { setTimerRunning(false); setTimerSeconds(m * 60); setActiveModal(null); }} style={{ padding: '8px', background: '#831843', border: '1px solid #f472b6', color: '#fff', borderRadius: '6px', cursor: 'pointer' }}>{m} Min</button>
+                  ))}
+                </div>
+                <button onClick={() => setActiveModal(null)} style={{ width: '100%', padding: '6px', background: '#334155', border: 'none', color: '#fff', borderRadius: '6px', cursor: 'pointer' }}>Cancel</button>
+              </div>
+            )}
+
+            {activeModal === 'alarm' && (
+              <div>
+                <h3 style={{ margin: '0 0 10px 0', color: '#4ade80' }}>🔔 Add Alarm</h3>
+                <input id="newAlarmTime" type="time" defaultValue="06:00" style={{ width: '100%', padding: '8px', background: '#000', color: '#4ade80', border: '1px solid #22c55e', borderRadius: '6px', fontSize: '18px', textAlign: 'center', boxSizing: 'border-box' }} />
+                <button 
+                  onClick={() => {
+                    const v = document.getElementById('newAlarmTime').value;
+                    if (v) {
+                      setAlarms([...alarms, { id: Date.now(), time: v, label: 'Custom', enabled: true }]);
+                      setActiveModal(null);
+                    }
+                  }} 
+                  style={{ marginTop: '12px', width: '100%', padding: '8px', background: '#16a34a', border: 'none', color: '#fff', fontWeight: 'bold', borderRadius: '6px', cursor: 'pointer' }}>
+                  Save Alarm
+                </button>
+              </div>
+            )}
+
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+}
