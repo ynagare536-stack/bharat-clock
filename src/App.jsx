@@ -42,7 +42,7 @@ export default function App() {
   }, [timerRunning, timerSeconds]);
 
   const formatSW = () => {
-    const ms = String(Math.floor((swTime % 1000))).padStart(3, '0');
+    const ms = String(Math.floor(swTime % 1000)).padStart(3, '0');
     const sec = String(Math.floor((swTime / 1000) % 60)).padStart(2, '0');
     const min = String(Math.floor((swTime / 60000) % 60)).padStart(2, '0');
     const hr = String(Math.floor(swTime / 3600000)).padStart(2, '0');
@@ -77,14 +77,13 @@ export default function App() {
           </div>
         </div>
 
-        {/* Center Pill Navigation */}
+        {/* Center Navigation */}
         <nav style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
           <button style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 14px', borderRadius: '20px', background: 'rgba(59, 130, 246, 0.2)', border: '1px solid #3b82f6', color: '#60a5fa', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>⌂ Home</button>
           <button onClick={() => alert('World Clock')} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', borderRadius: '20px', background: 'transparent', border: '1px solid transparent', color: '#94a3b8', fontSize: '11px', cursor: 'pointer' }}>🌐 World Clock</button>
           <button onClick={() => alert('Calendar')} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', borderRadius: '20px', background: 'transparent', border: '1px solid transparent', color: '#94a3b8', fontSize: '11px', cursor: 'pointer' }}>📅 Calendar</button>
           <button onClick={() => setActiveModal('notes')} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', borderRadius: '20px', background: 'transparent', border: '1px solid transparent', color: '#94a3b8', fontSize: '11px', cursor: 'pointer' }}>🛠️ Tools</button>
           <button onClick={() => setActiveModal('alarm')} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', borderRadius: '20px', background: 'transparent', border: '1px solid transparent', color: '#94a3b8', fontSize: '11px', cursor: 'pointer' }}>🔔 Alarm</button>
-          <button onClick={() => alert('Settings')} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', borderRadius: '20px', background: 'transparent', border: '1px solid transparent', color: '#94a3b8', fontSize: '11px', cursor: 'pointer' }}>⚙️ Settings</button>
         </nav>
 
         {/* Right Search & Controls */}
@@ -97,10 +96,10 @@ export default function App() {
         </div>
       </header>
 
-      {/* 2. MAIN BODY (Sidebar + 3 Column Dashboard) */}
+      {/* 2. MAIN BODY */}
       <div style={{ display: 'flex', gap: '12px', flex: 1 }}>
         
-        {/* LEFT VERTICAL CYBER SIDEBAR */}
+        {/* LEFT VERTICAL SIDEBAR */}
         <aside className="cyber-panel border-gradient-cyan" style={{ width: '70px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', alignItems: 'center', padding: '14px 0' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', alignItems: 'center', width: '100%' }}>
             <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(0,240,255,0.15)', border: '1px solid #00f0ff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#00f0ff', cursor: 'pointer' }}>⊞</div>
@@ -108,27 +107,24 @@ export default function App() {
             <div onClick={() => alert('Calendar')} style={{ width: '40px', height: '40px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '9px', cursor: 'pointer' }}>📅<span>Calendar</span></div>
             <div onClick={() => setActiveModal('notes')} style={{ width: '40px', height: '40px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '9px', cursor: 'pointer' }}>🛠️<span>Tools</span></div>
             <div onClick={() => setActiveModal('alarm')} style={{ width: '40px', height: '40px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '9px', cursor: 'pointer' }}>🔔<span>Alarm</span></div>
-            <div onClick={() => alert('Settings')} style={{ width: '40px', height: '40px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '9px', cursor: 'pointer' }}>⚙️<span>Settings</span></div>
-            <div onClick={() => alert('Theme')} style={{ width: '40px', height: '40px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '9px', cursor: 'pointer' }}>🎨<span>Theme</span></div>
           </div>
 
           <div style={{ width: '56px', padding: '4px', borderRadius: '6px', background: 'rgba(34,197,94,0.15)', border: '1px solid #22c55e', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <span style={{ fontSize: '8px', color: '#4ade80', fontWeight: 'bold' }}>LIVE STATUS</span>
+            <span style={{ fontSize: '8px', color: '#4ade80', fontWeight: 'bold' }}>LIVE</span>
             <span style={{ fontSize: '8px', color: '#4ade80' }}>● ONLINE</span>
           </div>
         </aside>
 
-        {/* MAIN 3-COLUMN INTERACTIVE GRID */}
+        {/* MAIN 3-COLUMN DASHBOARD */}
         <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1.3fr 1.1fr', gap: '12px' }}>
           
-          {/* ROW 1: HERO DIGITAL CLOCK WITH INDIA MAP & MONUMENTS (Spans Col 1 & 2) */}
+          {/* ROW 1: HERO DIGITAL CLOCK (Spans Col 1 & 2) */}
           <div className="cyber-panel border-gradient-hero" style={{ gridColumn: 'span 2', padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', position: 'relative', overflow: 'hidden', minHeight: '220px' }}>
             
-            {/* Background Glowing India Map Wireframe & Ashoka Chakra */}
+            {/* India Map Wireframe & Ashoka Chakra */}
             <div style={{ position: 'absolute', right: '15px', top: '10px', width: '230px', height: '190px', pointerEvents: 'none', opacity: 0.85 }}>
               <svg viewBox="0 0 200 200" style={{ width: '100%', height: '100%', stroke: '#00ff88', strokeWidth: '1.2', fill: 'none' }}>
                 <path d="M 90,15 L 110,30 L 105,45 L 140,50 L 170,75 L 160,110 L 130,140 L 110,185 L 95,185 L 85,140 L 60,115 L 45,95 L 70,70 L 60,40 Z" strokeDasharray="3,3" />
-                {/* Embedded Glowing Ashoka Chakra */}
                 <circle cx="100" cy="95" r="22" stroke="#00f0ff" strokeWidth="1.5" fill="rgba(0, 240, 255, 0.05)" />
                 {[...Array(24)].map((_, i) => (
                   <line key={i} x1="100" y1="95" x2={100 + 22 * Math.cos((i * 15 * Math.PI) / 180)} y2={95 + 22 * Math.sin((i * 15 * Math.PI) / 180)} stroke="#00f0ff" strokeWidth="1" />
@@ -136,14 +132,6 @@ export default function App() {
               </svg>
             </div>
 
-            {/* Neon Monuments Outline (India Gate, Taj Mahal, Red Fort silhouette) */}
-            <div style={{ position: 'absolute', bottom: '34px', left: '20px', right: '200px', height: '45px', opacity: 0.35, pointerEvents: 'none' }}>
-              <svg viewBox="0 0 300 60" style={{ width: '100%', height: '100%', stroke: '#3b82f6', strokeWidth: '1.2', fill: 'none' }}>
-                <path d="M 20,60 L 20,25 L 35,25 L 35,60 M 27,25 L 27,15 L 35,15 M 50,60 L 50,30 Q 75,10 100,30 L 100,60 M 65,30 L 65,60 M 85,30 L 85,60 M 130,60 L 130,20 L 150,20 L 150,60 M 180,60 L 180,35 L 210,35 L 210,60" />
-              </svg>
-            </div>
-
-            {/* Header tag */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span className="font-tech" style={{ fontSize: '13px', color: '#00ff88', letterSpacing: '1px' }}>
                 🧭 INDIA STANDARD TIME <span style={{ color: '#94a3b8' }}>UTC +5:30</span>
@@ -151,7 +139,7 @@ export default function App() {
               <span style={{ background: '#052e16', border: '1px solid #22c55e', color: '#4ade80', padding: '2px 8px', borderRadius: '12px', fontSize: '10px', fontWeight: 'bold' }}>● LIVE</span>
             </div>
 
-            {/* Glowing Big Clock Digits */}
+            {/* Big Digits */}
             <div style={{ margin: '10px 0', display: 'flex', alignItems: 'baseline', gap: '4px' }}>
               <span className="font-digital glow-pink" style={{ fontSize: '72px', fontWeight: '900', letterSpacing: '2px' }}>
                 {formattedHours}
@@ -167,7 +155,6 @@ export default function App() {
               {!is24Hour && <span className="font-digital glow-cyan" style={{ fontSize: '24px', marginLeft: '10px' }}>{ampm}</span>}
             </div>
 
-            {/* Bottom Details & 12H/24H selector */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '8px', fontSize: '12px', color: '#cbd5e1' }}>
               <span className="font-tech" style={{ letterSpacing: '1px' }}>TUESDAY, 25 AUGUST 2026</span>
               <span className="font-tech" style={{ color: '#94a3b8' }}>📍 New Delhi, India</span>
@@ -191,13 +178,12 @@ export default function App() {
               <span>9</span><span>10</span><span>11</span><span>12</span><span>13</span><span>14</span><span>15</span>
               <span>16</span><span>17</span><span>18</span><span>19</span><span>20</span><span>21</span><span>22</span>
               <span>23</span><span>24</span>
-              <span style={{ background: 'rgba(34, 197, 94, 0.25)', border: '1px solid #4ade80', color: '#4ade80', borderRadius: '4px', fontWeight: 'bold', boxShadow: '0 0 8px rgba(74, 222, 128, 0.4)' }}>25</span>
+              <span style={{ background: 'rgba(34, 197, 94, 0.25)', border: '1px solid #4ade80', color: '#4ade80', borderRadius: '4px', fontWeight: 'bold' }}>25</span>
               <span>26</span><span>27</span><span>28</span><span>29</span>
-              <span>30</span><span>31</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span>
             </div>
             <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '6px', display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#94a3b8' }}>
               <span>25 AUGUST 2026</span>
-              <span style={{ color: '#00f0ff' }}>No events today ›</span>
+              <span style={{ color: '#00f0ff' }}>No events today</span>
             </div>
           </div>
 
@@ -212,7 +198,6 @@ export default function App() {
               <div style={{ fontSize: '9px', color: '#cbd5e1', lineHeight: '1.5', textAlign: 'right' }}>
                 <div>Humidity: 58%</div>
                 <div>Wind: 12 km/h</div>
-                <div>Pressure: 1012 hPa</div>
                 <div style={{ color: '#4ade80' }}>Clear Sky</div>
               </div>
             </div>
@@ -240,10 +225,6 @@ export default function App() {
                 <span>🇬🇧 London, UK</span>
                 <span className="font-digital" style={{ color: '#c084fc' }}>04:15 AM</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', background: 'rgba(255,255,255,0.03)', padding: '4px 6px', borderRadius: '4px' }}>
-                <span>🇦🇪 Dubai, UAE</span>
-                <span className="font-digital" style={{ color: '#f59e0b' }}>07:15 AM</span>
-              </div>
             </div>
           </div>
 
@@ -251,4 +232,23 @@ export default function App() {
           <div className="cyber-panel border-gradient-purple" style={{ padding: '14px' }}>
             <div className="font-tech" style={{ fontSize: '11px', color: '#00f0ff', fontWeight: 'bold', marginBottom: '6px' }}>🛠️ TOOLS</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px', textAlign: 'center', fontSize: '9px' }}>
-              <div onClick={() => setSwRunning(!swRunning)} style={{ padding: '8px 2px', background: 'rgba(0, 240, 255, 0.1)', border: '1px solid #00f0ff', color: '#00f0ff', borderRadius: '8px', cursor: 'pointer', boxShadow: '0 0 10px rgba(0,24
+              <div onClick={() => setSwRunning(!swRunning)} style={{ padding: '8px 2px', background: 'rgba(0, 240, 255, 0.1)', border: '1px solid #00f0ff', color: '#00f0ff', borderRadius: '8px', cursor: 'pointer' }}>⏱️<br/>Stopwatch</div>
+              <div onClick={() => setTimerRunning(!timerRunning)} style={{ padding: '8px 2px', background: 'rgba(245, 158, 11, 0.1)', border: '1px solid #f59e0b', color: '#fbbf24', borderRadius: '8px', cursor: 'pointer' }}>⏳<br/>Timer</div>
+              <div onClick={() => setActiveModal('alarm')} style={{ padding: '8px 2px', background: 'rgba(59, 130, 246, 0.1)', border: '1px solid #3b82f6', color: '#60a5fa', borderRadius: '8px', cursor: 'pointer' }}>🔔<br/>Alarm</div>
+              <div onClick={() => setActiveModal('countdown')} style={{ padding: '8px 2px', background: 'rgba(236, 72, 153, 0.1)', border: '1px solid #ec4899', color: '#f472b6', borderRadius: '8px', cursor: 'pointer' }}>🔄<br/>Countdown</div>
+              <div onClick={() => { setTimerRunning(false); setTimerSeconds(25*60); setTimerRunning(true); }} style={{ padding: '8px 2px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid #ef4444', color: '#f87171', borderRadius: '8px', cursor: 'pointer' }}>🍅<br/>Pomodoro</div>
+              <div onClick={() => setActiveModal('notes')} style={{ padding: '8px 2px', background: 'rgba(234, 179, 8, 0.1)', border: '1px solid #eab308', color: '#fde047', borderRadius: '8px', cursor: 'pointer' }}>📝<br/>Notes</div>
+            </div>
+          </div>
+
+          {/* ROW 3: RADAR STOPWATCH (Col 1) */}
+          <div className="cyber-panel border-gradient-cyan" style={{ padding: '14px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            <div className="font-tech" style={{ fontSize: '11px', color: '#00ff88', fontWeight: 'bold' }}>⏱️ STOPWATCH</div>
+            <div className="font-digital glow-cyan" style={{ fontSize: '18px', textAlign: 'center', margin: '4px 0', letterSpacing: '1px' }}>
+              {formatSW()}
+            </div>
+            <div style={{ display: 'flex', gap: '6px' }}>
+              <button onClick={() => setSwRunning(!swRunning)} style={{ flex: 1, padding: '6px', background: swRunning ? '#7f1d1d' : '#14532d', border: `1px solid ${swRunning ? '#ef4444' : '#22c55e'}`, color: '#fff', borderRadius: '6px', fontSize: '10px', fontWeight: 'bold', cursor: 'pointer' }}>
+                {swRunning ? 'Pause' : 'Start'}
+              </button>
+              <button on
