@@ -1,575 +1,317 @@
-import { useEffect, useMemo, useState } from "react";
-import "./App.css";
+import React, { useState, useEffect } from 'react';
+import { 
+  LayoutDashboard, Globe, Calendar, Wrench, Bell, Settings, 
+  Palette, Search, Moon, Sun, Volume2, Maximize2, Play, 
+  RotateCcw, Pause, CheckCircle2, Clock, Hourglass, NotebookPen
+} from 'lucide-react';
+import './App.css';
 
-const cities = [
-  { flag: "🇮🇳", city: "New Delhi", country: "India", zone: "Asia/Kolkata", code: "IST" },
-  { flag: "🇺🇸", city: "New York", country: "USA", zone: "America/New_York", code: "EDT" },
-  { flag: "🇬🇧", city: "London", country: "UK", zone: "Europe/London", code: "BST" },
-  { flag: "🇦🇪", city: "Dubai", country: "UAE", zone: "Asia/Dubai", code: "GST" },
-  { flag: "🇯🇵", city: "Tokyo", country: "Japan", zone: "Asia/Tokyo", code: "JST" },
-  { flag: "🇦🇺", city: "Sydney", country: "Australia", zone: "Australia/Sydney", code: "AEST" },
-];
+export default function App() {
+  const [time, setTime] = useState(new Date());
+  const [is24Hour, setIs24Hour] = useState(false);
+  
+  // Stopwatch States
+  const [swTime, setSwTime] = useState(0);
+  const [swRunning, setSwRunning] = useState(false);
 
-const navItems = [
-  ["⌂", "Home"],
-  ["◎", "World Clock"],
-  ["▣", "Calendar"],
-  ["⚒", "Tools"],
-  ["♧", "Alarm"],
-  ["⚙", "Settings"],
-];
-
-function pad(n) {
-  return String(n).padStart(2, "0");
-}
-
-function formatTime(date, zone, hour12 = false) {
-  return new Intl.DateTimeFormat("en-US", {
-    timeZone: zone,
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12,
-  }).format(date);
-}
-
-function formatDate(date, zone) {
-  return new Intl.DateTimeFormat("en-US", {
-    timeZone: zone,
-    weekday: "long",
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-  }).format(date);
-}
-
-function App() {
-  const [now, setNow] = useState(new Date());
-  const [activeNav, setActiveNav] = useState("Home");
-  const [dark, setDark] = useState(true);
-  const [hour12, setHour12] = useState(false);
-
-  const [stopwatch, setStopwatch] = useState(0);
-  const [stopRunning, setStopRunning] = useState(false);
-  const [laps, setLaps] = useState([]);
-
-  const [timer, setTimer] = useState(25 * 60);
-  const [timerRunning, setTimerRunning] = useState(false);
-  const [timerInput, setTimerInput] = useState("25");
-
-  const [alarms, setAlarms] = useState([
-    { id: 1, time: "07:00", period: "Daily", on: true },
-    { id: 2, time: "08:30", period: "Mon, Tue, Wed, Thu, Fri", on: false },
-  ]);
-
-  const [notes, setNotes] = useState("");
-  const [selectedDate, setSelectedDate] = useState(new Date().getDate());
-
+  // Clock Ticker
   useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(id);
+    const timer = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(timer);
   }, []);
 
+  // Stopwatch Ticker
   useEffect(() => {
-    if (!stopRunning) return;
+    let interval;
+    if (swRunning) {
+      interval = setInterval(() => setSwTime((prev) => prev + 10), 10);
+    }
+    return () => clearInterval(interval);
+  }, [swRunning]);
 
-    const id = setInterval(() => {
-      setStopwatch((v) => v + 10);
-    }, 10);
-
-    return () => clearInterval(id);
-  }, [stopRunning]);
-
-  useEffect(() => {
-    if (!timerRunning) return;
-
-    const id = setInterval(() => {
-      setTimer((v) => {
-        if (v <= 1) {
-          setTimerRunning(false);
-          return 0;
-        }
-        return v - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(id);
-  }, [timerRunning]);
-
-  const istTime = useMemo(
-    () => formatTime(now, "Asia/Kolkata", hour12),
-    [now, hour12]
-  );
-
-  const istDate = useMemo(
-    () => formatDate(now, "Asia/Kolkata"),
-    [now]
-  );
-
-  const stopwatchText = `${pad(Math.floor(stopwatch / 360000))}:${pad(
-    Math.floor((stopwatch % 360000) / 6000)
-  )}:${pad(Math.floor((stopwatch % 6000) / 100))}.${pad(stopwatch % 100)}`;
-
-  const timerText = `${pad(Math.floor(timer / 60))}:${pad(timer % 60)}`;
-
-  const setTimerMinutes = (minutes) => {
-    setTimer(Number(minutes) * 60);
-    setTimerRunning(false);
+  const formatStopwatch = () => {
+    const ms = `00${swTime % 1000}`.slice(-3);
+    const sec = `0${Math.floor((swTime / 1000) % 60)}`.slice(-2);
+    const min = `0${Math.floor((swTime / 60000) % 60)}`.slice(-2);
+    const hr = `0${Math.floor(swTime / 3600000)}`.slice(-2);
+    return `${hr}:${min}:${sec}.${ms}`;
   };
 
-  const addAlarm = () => {
-    const time = prompt("Enter alarm time (HH:MM)");
-    if (!time) return;
-
-    setAlarms((a) => [
-      ...a,
-      {
-        id: Date.now(),
-        time,
-        period: "Daily",
-        on: true,
-      },
-    ]);
-  };
-
-  const toggleAlarm = (id) => {
-    setAlarms((items) =>
-      items.map((alarm) =>
-        alarm.id === id ? { ...alarm, on: !alarm.on } : alarm
-      )
-    );
-  };
-
-  const monthDays = Array.from({ length: 31 }, (_, i) => i + 1);
+  const hours = time.getHours();
+  const formattedHours = is24Hour ? `0${hours}`.slice(-2) : `0${hours % 12 || 12}`.slice(-2);
+  const formattedMinutes = `0${time.getMinutes()}`.slice(-2);
+  const formattedSeconds = `0${time.getSeconds()}`.slice(-2);
+  const ampm = hours >= 12 ? 'PM' : 'AM';
 
   return (
-    <div className={dark ? "app dark" : "app light"}>
-      <div className="stars"></div>
-      <div className="aurora aurora-one"></div>
-      <div className="aurora aurora-two"></div>
-
-      {/* TOP NAVIGATION */}
-      <header className="topbar">
-        <div className="brand">
-          <div className="flag">🇮🇳</div>
+    <div className="min-h-screen flex flex-col justify-between p-3 select-none">
+      
+      {/* 1. TOP NAVBAR */}
+      <header className="glass-panel px-6 py-3 flex items-center justify-between neon-border-purple mb-3">
+        <div className="flex items-center gap-3">
+          <span className="text-2xl">🇮🇳</span>
           <div>
-            <div className="brand-title">
-              भारत <span>CLOCK</span>
-            </div>
-            <div className="brand-sub">Made in India ❤️</div>
+            <h1 className="text-xl font-bold font-tech tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-white to-green-400">
+              भारत CLOCK
+            </h1>
+            <p className="text-[10px] text-gray-400">Made in India ❤️</p>
           </div>
         </div>
 
-        <nav className="top-nav">
-          {navItems.map(([icon, name]) => (
-            <button
-              key={name}
-              className={activeNav === name ? "nav-btn active" : "nav-btn"}
-              onClick={() => setActiveNav(name)}
-            >
-              <span>{icon}</span>
-              {name}
-            </button>
-          ))}
+        <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
+          <button className="flex items-center gap-2 text-cyan-400 px-3 py-1 rounded-full bg-cyan-950/40 border border-cyan-500/30">
+            <LayoutDashboard size={16} /> Home
+          </button>
+          <button className="flex items-center gap-2 text-gray-400 hover:text-white transition">
+            <Globe size={16} /> World Clock
+          </button>
+          <button className="flex items-center gap-2 text-gray-400 hover:text-white transition">
+            <Calendar size={16} /> Calendar
+          </button>
+          <button className="flex items-center gap-2 text-gray-400 hover:text-white transition">
+            <Wrench size={16} /> Tools
+          </button>
+          <button className="flex items-center gap-2 text-gray-400 hover:text-white transition">
+            <Bell size={16} /> Alarm
+          </button>
+          <button className="flex items-center gap-2 text-gray-400 hover:text-white transition">
+            <Settings size={16} /> Settings
+          </button>
         </nav>
 
-        <div className="top-actions">
-          <button className="circle-btn">⌕</button>
-
-          <button
-            className="theme-toggle"
-            onClick={() => setDark(!dark)}
-            title="Toggle theme"
-          >
-            {dark ? "☀" : "☾"}
+        <div className="flex items-center gap-3">
+          <button className="p-2 rounded-lg bg-slate-800/60 hover:bg-slate-700/60 text-gray-300">
+            <Search size={16} />
           </button>
-
-          <button className="language">EN⌄</button>
+          <button className="p-2 rounded-lg bg-slate-800/60 text-cyan-400 border border-cyan-500/20">
+            <Moon size={16} />
+          </button>
+          <span className="text-xs px-2 py-1 rounded bg-slate-800 border border-white/10 text-gray-300">EN ▾</span>
         </div>
       </header>
 
-      {/* BODY */}
-      <div className="layout">
-        {/* SIDEBAR */}
-        <aside className="sidebar">
-          {navItems.map(([icon, name]) => (
-            <button
-              key={name}
-              className={activeNav === name ? "side-btn selected" : "side-btn"}
-              onClick={() => setActiveNav(name)}
-            >
-              <span>{icon}</span>
-              <small>{name}</small>
-            </button>
-          ))}
+      {/* 2. BODY LAYOUT */}
+      <div className="dashboard-grid flex-1">
+        
+        {/* LEFT SIDEBAR */}
+        <aside className="glass-panel flex flex-col items-center justify-between py-6 neon-border-cyan">
+          <div className="flex flex-col items-center gap-6">
+            <button className="p-3 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/40 shadow-lg shadow-cyan-500/20"><LayoutDashboard size={20} /></button>
+            <button className="p-3 text-gray-400 hover:text-purple-400 transition"><Globe size={20} /></button>
+            <button className="p-3 text-gray-400 hover:text-pink-400 transition"><Calendar size={20} /></button>
+            <button className="p-3 text-gray-400 hover:text-blue-400 transition"><Wrench size={20} /></button>
+            <button className="p-3 text-gray-400 hover:text-red-400 transition"><Bell size={20} /></button>
+            <button className="p-3 text-gray-400 hover:text-yellow-400 transition"><Settings size={20} /></button>
+            <button className="p-3 text-gray-400 hover:text-green-400 transition"><Palette size={20} /></button>
+          </div>
 
-          <div className="online-card">
-            <div className="pulse-dot"></div>
-            LIVE STATUS
-            <strong>ONLINE</strong>
+          <div className="text-[10px] flex flex-col items-center text-green-400 font-tech">
+            <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse mb-1"></span>
+            LIVE
           </div>
         </aside>
 
-        <main className="dashboard">
-          {/* MAIN CLOCK */}
-          <section className="clock-card neon-blue">
-            <div className="card-top">
-              <span className="section-title">
-                ☼ INDIA STANDARD TIME
-                <small>UTC +5:30</small>
-              </span>
-
-              <span className="live">
-                <i></i> LIVE
-              </span>
-            </div>
-
-            <div className="clock-content">
-              <div className="clock-left">
-                <div className="digital-clock">
-                  {istTime.split(" ")[0]}
-                  {hour12 && (
-                    <span className="ampm">{istTime.split(" ")[1]}</span>
-                  )}
-                </div>
-
-                <div className="big-date">{istDate.toUpperCase()}</div>
-
-                <div className="location">
-                  ⌖ New Delhi, India
-                </div>
-
-                <div className="clock-controls">
-                  <button onClick={() => setHour12(false)}>24H</button>
-                  <button
-                    className={hour12 ? "selected" : ""}
-                    onClick={() => setHour12(true)}
-                  >
-                    12H
-                  </button>
-                  <button>🔊</button>
-                  <button>⛶</button>
-                </div>
-              </div>
-
-              <div className="india-visual">
-                <div className="india-map">
-                  <div className="map-glow">✦</div>
-                  <div className="chakra">☸</div>
-                  <div className="india-text">INDIA</div>
-                </div>
-
-                <div className="monuments">
-                  <span>▥</span>
-                  <span>▤</span>
-                  <span>▥</span>
-                  <span>◈</span>
-                  <span>♜</span>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* CALENDAR */}
-          <section className="calendar-card neon-purple card">
-            <div className="card-heading">
-              <h3>▣ CALENDAR</h3>
-              <div>‹ &nbsp; ›</div>
-            </div>
-
-            <div className="month-title">AUGUST 2026</div>
-
-            <div className="weekdays">
-              <b>SUN</b>
-              <span>MON</span>
-              <span>TUE</span>
-              <span>WED</span>
-              <span>THU</span>
-              <span>FRI</span>
-              <b>SAT</b>
-            </div>
-
-            <div className="calendar-grid">
-              {[26, 27, 28, 29, 30, 31].map((d) => (
-                <span className="muted-day" key={`p${d}`}>
-                  {d}
+        {/* MAIN DASHBOARD */}
+        <div className="flex flex-col gap-4">
+          
+          {/* TOP SECTION */}
+          <div className="main-content-grid">
+            
+            {/* HERO CARD - DIGITAL CLOCK */}
+            <div className="glass-panel p-6 neon-border-cyan flex flex-col justify-between relative overflow-hidden">
+              <div className="flex justify-between items-center text-xs text-cyan-400 font-tech">
+                <span className="tracking-widest flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-cyan-400"></span> INDIA STANDARD TIME (UTC +5:30)
                 </span>
-              ))}
+                <span className="px-2 py-0.5 rounded-full bg-green-950 border border-green-500/40 text-green-400 text-[10px]">● LIVE</span>
+              </div>
 
-              {monthDays.map((d) => (
-                <button
-                  key={d}
-                  className={selectedDate === d ? "today" : ""}
-                  onClick={() => setSelectedDate(d)}
+              {/* CLOCK DIGITS */}
+              <div className="my-4 flex items-baseline gap-2">
+                <span className="font-digital text-7xl font-bold tracking-wider neon-text-pink">
+                  {formattedHours}:{formattedMinutes}
+                </span>
+                <span className="font-digital text-6xl font-bold neon-text-green">
+                  :{formattedSeconds}
+                </span>
+                {!is24Hour && (
+                  <span className="font-digital text-2xl text-cyan-400 ml-2">{ampm}</span>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between text-xs text-gray-300 font-tech border-t border-white/10 pt-3">
+                <span>📍 NEW DELHI, INDIA</span>
+                <span>TUESDAY, 25 AUGUST 2026</span>
+                
+                {/* 12H / 24H Toggle */}
+                <div className="flex items-center gap-1 bg-black/40 p-1 rounded-lg border border-white/10">
+                  <button onClick={() => setIs24Hour(false)} className={`px-2 py-0.5 rounded ${!is24Hour ? 'bg-purple-600 text-white' : 'text-gray-400'}`}>12H</button>
+                  <button onClick={() => setIs24Hour(true)} className={`px-2 py-0.5 rounded ${is24Hour ? 'bg-purple-600 text-white' : 'text-gray-400'}`}>24H</button>
+                </div>
+              </div>
+            </div>
+
+            {/* CALENDAR MINI WIDGET */}
+            <div className="glass-panel p-4 neon-border-purple flex flex-col justify-between">
+              <div className="flex justify-between items-center text-xs font-tech text-purple-300 mb-2">
+                <span className="flex items-center gap-1"><Calendar size={14} /> CALENDAR</span>
+                <span>AUGUST 2026</span>
+              </div>
+              <div className="grid grid-cols-7 gap-1 text-center text-[10px] text-gray-400 font-tech">
+                <span className="text-red-400">SUN</span><span>MON</span><span>TUE</span><span>WED</span><span>THU</span><span>FRI</span><span>SAT</span>
+                <span className="p-1">26</span><span className="p-1">27</span><span className="p-1">28</span><span className="p-1">29</span><span className="p-1">30</span><span className="p-1">31</span><span className="p-1">1</span>
+                <span className="p-1">2</span><span className="p-1">3</span><span className="p-1">4</span><span className="p-1">5</span><span className="p-1">6</span><span className="p-1">7</span><span className="p-1">8</span>
+                <span className="p-1">9</span><span className="p-1">10</span><span className="p-1">11</span><span className="p-1">12</span><span className="p-1">13</span><span className="p-1">14</span><span className="p-1">15</span>
+                <span className="p-1">16</span><span className="p-1">17</span><span className="p-1">18</span><span className="p-1">19</span><span className="p-1">20</span><span className="p-1">21</span><span className="p-1">22</span>
+                <span className="p-1">23</span><span className="p-1">24</span>
+                <span className="p-1 bg-green-500/20 text-green-300 border border-green-400 rounded-md font-bold">25</span>
+                <span className="p-1">26</span><span className="p-1">27</span><span className="p-1">28</span><span className="p-1">29</span>
+              </div>
+              <div className="text-[11px] text-gray-400 mt-2 border-t border-white/10 pt-2 flex justify-between">
+                <span>No events today</span>
+                <span className="text-cyan-400 cursor-pointer">+ Add</span>
+              </div>
+            </div>
+
+          </div>
+
+          {/* MIDDLE SECTION */}
+          <div className="middle-row-grid">
+            
+            {/* WEATHER */}
+            <div className="glass-panel p-4 neon-border-cyan flex flex-col justify-between">
+              <div className="flex justify-between items-center text-xs text-yellow-400">
+                <span>☀️ WEATHER</span>
+                <span className="text-gray-400 text-[10px]">New Delhi</span>
+              </div>
+              <div className="flex items-center justify-between my-2">
+                <span className="text-4xl font-digital text-yellow-300">28°C</span>
+                <div className="text-[10px] text-gray-400 text-right">
+                  <p>Humidity: 58%</p>
+                  <p>Wind: 12 km/h</p>
+                  <p>Clear Sky</p>
+                </div>
+              </div>
+              <div className="flex justify-between text-[9px] text-gray-400 border-t border-white/10 pt-2">
+                <span>WED: 32°</span>
+                <span>THU: 31°</span>
+                <span>FRI: 30°</span>
+                <span>SAT: 31°</span>
+              </div>
+            </div>
+
+            {/* WORLD CLOCK */}
+            <div className="glass-panel p-4 neon-border-green flex flex-col justify-between">
+              <div className="flex justify-between items-center text-xs text-green-400 mb-2 font-tech">
+                <span>🌐 WORLD CLOCK</span>
+                <span className="text-[10px] text-gray-400">+ Add City</span>
+              </div>
+              <div className="flex flex-col gap-1.5 text-xs">
+                <div className="flex justify-between items-center bg-white/5 p-1.5 rounded">
+                  <span>🇺🇸 New York, USA</span>
+                  <span className="font-digital text-cyan-300">11:15 PM</span>
+                </div>
+                <div className="flex justify-between items-center bg-white/5 p-1.5 rounded">
+                  <span>🇬🇧 London, UK</span>
+                  <span className="font-digital text-purple-300">04:15 AM</span>
+                </div>
+                <div className="flex justify-between items-center bg-white/5 p-1.5 rounded">
+                  <span>🇯🇵 Tokyo, Japan</span>
+                  <span className="font-digital text-pink-300">12:15 PM</span>
+                </div>
+              </div>
+            </div>
+
+            {/* QUICK TOOLS */}
+            <div className="glass-panel p-4 neon-border-purple">
+              <div className="text-xs text-purple-300 mb-2 font-tech">🛠️ TOOLS</div>
+              <div className="grid grid-cols-3 gap-2 text-center text-[10px]">
+                <div className="p-2 rounded bg-cyan-950/30 border border-cyan-500/30 text-cyan-300 flex flex-col items-center gap-1 cursor-pointer hover:scale-105 transition"><Clock size={16} />Stopwatch</div>
+                <div className="p-2 rounded bg-amber-950/30 border border-amber-500/30 text-amber-300 flex flex-col items-center gap-1 cursor-pointer hover:scale-105 transition"><Hourglass size={16} />Timer</div>
+                <div className="p-2 rounded bg-blue-950/30 border border-blue-500/30 text-blue-300 flex flex-col items-center gap-1 cursor-pointer hover:scale-105 transition"><Bell size={16} />Alarm</div>
+                <div className="p-2 rounded bg-pink-950/30 border border-pink-500/30 text-pink-300 flex flex-col items-center gap-1 cursor-pointer hover:scale-105 transition"><RotateCcw size={16} />Countdown</div>
+                <div className="p-2 rounded bg-red-950/30 border border-red-500/30 text-red-300 flex flex-col items-center gap-1 cursor-pointer hover:scale-105 transition">🍅 Pomodoro</div>
+                <div className="p-2 rounded bg-yellow-950/30 border border-yellow-500/30 text-yellow-300 flex flex-col items-center gap-1 cursor-pointer hover:scale-105 transition"><NotebookPen size={16} />Notes</div>
+              </div>
+            </div>
+
+          </div>
+
+          {/* BOTTOM SECTION */}
+          <div className="bottom-row-grid">
+            
+            {/* STOPWATCH */}
+            <div className="glass-panel p-4 neon-border-cyan flex flex-col justify-between">
+              <div className="text-xs text-cyan-400 font-tech">⏱️ STOPWATCH</div>
+              <div className="text-center my-2">
+                <span className="font-digital text-2xl text-cyan-300 tracking-wider">
+                  {formatStopwatch()}
+                </span>
+              </div>
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => setSwRunning(!swRunning)} 
+                  className={`flex-1 py-1 rounded text-xs font-semibold ${swRunning ? 'bg-red-500/20 text-red-300 border border-red-500' : 'bg-green-500/20 text-green-300 border border-green-500'}`}
                 >
-                  {d}
+                  {swRunning ? 'Pause' : 'Start'}
                 </button>
-              ))}
-            </div>
-
-            <div className="event-box">
-              <span>▣</span>
-              <div>
-                <strong>{selectedDate} AUGUST 2026</strong>
-                <small>No events today</small>
-              </div>
-              <b>›</b>
-            </div>
-          </section>
-
-          {/* WEATHER */}
-          <section className="weather-card card neon-yellow">
-            <div className="card-heading">
-              <h3>☀ WEATHER</h3>
-              <small>⌖ New Delhi, India</small>
-            </div>
-
-            <div className="weather-main">
-              <div className="sun-icon">☼</div>
-              <div>
-                <div className="temperature">28°C</div>
-                <div>Clear Sky</div>
-              </div>
-
-              <div className="weather-info">
-                <p>Humidity <b>58%</b></p>
-                <p>Wind <b>12 km/h</b></p>
-                <p>Pressure <b>1012 hPa</b></p>
-                <p>Visibility <b>10 km</b></p>
-              </div>
-            </div>
-
-            <div className="forecast">
-              {[
-                ["WED", "☀", "32°", "26°"],
-                ["THU", "☀", "31°", "25°"],
-                ["FRI", "☁", "30°", "24°"],
-                ["SAT", "☀", "31°", "25°"],
-                ["SUN", "☀", "32°", "25°"],
-                ["MON", "☁", "31°", "25°"],
-              ].map(([day, icon, hi, lo]) => (
-                <div className="forecast-day" key={day}>
-                  <b>{day}</b>
-                  <span>{icon}</span>
-                  <strong>{hi}</strong>
-                  <small>{lo}</small>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* WORLD CLOCK */}
-          <section className="world-card card neon-blue">
-            <div className="card-heading">
-              <h3>◎ WORLD CLOCK</h3>
-              <button className="small-add">＋ Add City</button>
-            </div>
-
-            <div className="world-list">
-              {cities.map((city) => (
-                <div className="world-row" key={city.city}>
-                  <span className="city-flag">{city.flag}</span>
-
-                  <strong>
-                    {city.city}, {city.country}
-                  </strong>
-
-                  <small>
-                    {new Intl.DateTimeFormat("en-US", {
-                      timeZone: city.zone,
-                      weekday: "short",
-                      day: "2-digit",
-                      month: "short",
-                    }).format(now)}
-                  </small>
-
-                  <em>{city.code}</em>
-
-                  <time>{formatTime(now, city.zone, true)}</time>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* TOOLS */}
-          <section className="tools-card card neon-cyan">
-            <div className="card-heading">
-              <h3>⚒ TOOLS</h3>
-            </div>
-
-            <div className="tools-grid">
-              {[
-                ["⏱", "Stopwatch", "green"],
-                ["⌛", "Timer", "yellow"],
-                ["⏰", "Alarm", "blue"],
-                ["◉", "Countdown", "purple"],
-                ["♥", "Pomodoro", "red"],
-                ["▤", "Notes", "yellow"],
-              ].map(([icon, name, color]) => (
-                <button className={`tool-box ${color}`} key={name}>
-                  <span>{icon}</span>
-                  {name}
+                <button 
+                  onClick={() => { setSwRunning(false); setSwTime(0); }} 
+                  className="px-3 py-1 rounded text-xs bg-slate-700/40 text-gray-300 border border-white/10"
+                >
+                  Reset
                 </button>
-              ))}
-            </div>
-          </section>
-
-          {/* STOPWATCH */}
-          <section className="stopwatch-card card neon-green">
-            <div className="card-heading">
-              <h3>⏱ STOPWATCH</h3>
-            </div>
-
-            <div className="stopwatch-time">{stopwatchText}</div>
-
-            <div className="rings">
-              <div></div>
-            </div>
-
-            <div className="control-row">
-              <button
-                className="green-btn"
-                onClick={() => setStopRunning(!stopRunning)}
-              >
-                {stopRunning ? "Pause" : "Start"}
-              </button>
-
-              <button
-                className="blue-btn"
-                onClick={() =>
-                  setLaps((l) => [...l, stopwatchText])
-                }
-              >
-                Lap
-              </button>
-
-              <button
-                className="red-btn"
-                onClick={() => {
-                  setStopRunning(false);
-                  setStopwatch(0);
-                  setLaps([]);
-                }}
-              >
-                Reset
-              </button>
-            </div>
-
-            {laps.length > 0 && (
-              <div className="laps">
-                {laps.slice(-3).map((lap, i) => (
-                  <span key={i}>Lap {i + 1}: {lap}</span>
-                ))}
               </div>
-            )}
-          </section>
-
-          {/* TIMER */}
-          <section className="timer-card card neon-orange">
-            <div className="card-heading">
-              <h3>⌛ TIMER</h3>
             </div>
 
-            <div className="timer-time">{timerText}</div>
-
-            <div className="timer-ring">
-              <span>{Math.ceil(timer / 60)}:00</span>
+            {/* COUNTDOWN TIMER */}
+            <div className="glass-panel p-4 neon-border-purple flex flex-col justify-between">
+              <div className="text-xs text-purple-400 font-tech">⏳ TIMER</div>
+              <div className="flex justify-around items-center my-2">
+                <span className="font-digital text-2xl text-purple-300">00:25:00</span>
+                <span className="text-[10px] px-2 py-1 bg-purple-500/20 border border-purple-500 rounded-full text-purple-300">25:00</span>
+              </div>
+              <div className="flex gap-2">
+                <button className="flex-1 py-1 rounded text-xs bg-orange-500/20 text-orange-300 border border-orange-500">Start</button>
+                <button className="px-3 py-1 rounded text-xs bg-slate-700/40 text-gray-300 border border-white/10">Reset</button>
+              </div>
             </div>
 
-            <div className="preset-row">
-              {[15, 25, 30, 60].map((m) => (
-                <button key={m} onClick={() => setTimerMinutes(m)}>
-                  {m === 60 ? "1h" : `${m}m`}
-                </button>
-              ))}
-              <input
-                value={timerInput}
-                onChange={(e) => setTimerInput(e.target.value)}
-                type="number"
-                min="1"
-                placeholder="Custom"
-              />
-              <button onClick={() => setTimerMinutes(timerInput)}>
-                Set
-              </button>
-            </div>
-
-            <div className="control-row">
-              <button
-                className="orange-btn"
-                onClick={() => setTimerRunning(!timerRunning)}
-              >
-                {timerRunning ? "Pause" : "Start"}
-              </button>
-
-              <button
-                className="blue-btn"
-                onClick={() => {
-                  setTimerRunning(false);
-                  setTimer(25 * 60);
-                }}
-              >
-                Reset
-              </button>
-            </div>
-          </section>
-
-          {/* ALARMS */}
-          <section className="alarm-card card neon-purple">
-            <div className="card-heading">
-              <h3>♧ ALARM</h3>
-              <button className="small-add" onClick={addAlarm}>
-                ＋ Add Alarm
-              </button>
-            </div>
-
-            <div className="alarm-list">
-              {alarms.map((alarm) => (
-                <div className="alarm-row" key={alarm.id}>
-                  <div>
-                    <strong>{alarm.time}</strong>
-                    <small>{alarm.period}</small>
-                  </div>
-
-                  <button
-                    className={alarm.on ? "switch on" : "switch"}
-                    onClick={() => toggleAlarm(alarm.id)}
-                  >
-                    <i></i>
-                  </button>
+            {/* ALARM */}
+            <div className="glass-panel p-4 neon-border-green flex flex-col justify-between">
+              <div className="flex justify-between items-center text-xs text-green-400 font-tech">
+                <span>🔔 ALARM</span>
+                <span className="text-[10px] cursor-pointer">+ Add</span>
+              </div>
+              <div className="flex items-center justify-between bg-white/5 p-2 rounded">
+                <div>
+                  <p className="font-digital text-sm text-green-300">07:00 AM</p>
+                  <p className="text-[9px] text-gray-400">Daily</p>
                 </div>
-              ))}
+                <input type="checkbox" defaultChecked className="toggle-checkbox accent-green-400 w-4 h-4 cursor-pointer" />
+              </div>
+              <div className="flex items-center justify-between bg-white/5 p-2 rounded">
+                <div>
+                  <p className="font-digital text-sm text-gray-300">08:30 AM</p>
+                  <p className="text-[9px] text-gray-400">Mon, Tue, Wed</p>
+                </div>
+                <input type="checkbox" className="toggle-checkbox accent-green-400 w-4 h-4 cursor-pointer" />
+              </div>
             </div>
-          </section>
 
-          {/* NOTES */}
-          <section className="notes-card card neon-yellow">
-            <div className="card-heading">
-              <h3>▤ NOTES</h3>
-              <span>Auto-save</span>
-            </div>
+          </div>
 
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Write your notes here..."
-            />
+        </div>
 
-            <div className="note-status">
-              {notes.length} characters
-            </div>
-          </section>
-        </main>
       </div>
 
-      {/* FOOTER */}
-      <footer>
+      {/* 4. FOOTER */}
+      <footer className="glass-panel px-6 py-2 flex items-center justify-between text-xs text-gray-400 mt-3">
         <span>© 2026 Bharat Clock. All rights reserved. 🇮🇳</span>
-        <strong>“समय सबसे कीमती दौलत है, इसे सही दिशा में निवेश करें।”</strong>
+        <span className="text-yellow-400/90 font-tech italic">"समय सबसे कीमती दौलत है, इसे सही दिशा में निवेश करें।"</span>
         <span>Made with ❤️ in India</span>
       </footer>
+
     </div>
   );
 }
-
-export default App;
