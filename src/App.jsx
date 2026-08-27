@@ -19,7 +19,9 @@ import {
   Hourglass,
   Clock,
   FileText,
-  Palette
+  Palette,
+  Plus,
+  X
 } from "lucide-react";
 import "./App.css";
 
@@ -44,21 +46,33 @@ export default function App() {
   const [timerPreset, setTimerPreset] = useState("25");
   const timerRef = useRef(null);
 
-  // Alarms
+  // Alarms State & Modal
   const [alarms, setAlarms] = useState([
     { id: 1, time: "07:00 AM", label: "Daily Wake Up", active: true },
-    { id: 2, time: "08:30 AM", label: "Mon, Tue, Wed, Thu, Fri", active: false }
+    { id: 2, time: "08:30 AM", label: "Work Routine", active: false }
   ]);
+  const [showAlarmModal, setShowAlarmModal] = useState(false);
+  const [newAlarmTime, setNewAlarmTime] = useState("06:00");
+  const [newAlarmLabel, setNewAlarmLabel] = useState("");
 
-  // World Cities List
+  // Interactive Calendar State & Live Events
+  const [selectedDay, setSelectedDay] = useState(time.getDate());
+  const [events, setEvents] = useState({
+    [time.getDate()]: "Live Session • Productivity Sprint",
+    15: "Independence Day Celebration 🇮🇳",
+    25: "Project Milestone Review",
+    28: "Team Sync & Code Deployment"
+  });
+
+  // World Cities
   const [cities, setCities] = useState([
     { id: 1, name: "New York, USA", flag: "🇺🇸", zone: "EDT", time: "11:15 PM", color: "#00f0ff" },
     { id: 2, name: "London, UK", flag: "🇬🇧", zone: "BST", time: "04:15 AM", color: "#ff9900" },
     { id: 3, name: "Dubai, UAE", flag: "🇦🇪", zone: "GST", time: "07:15 AM", color: "#ff007f" },
-    { id: 4, name: "Tokyo, Japan", flag: "🇯🇵", zone: "JST", time: "12:15 PM", color: "#00ff88" },
-    { id: 5, name: "Sydney, Australia", flag: "🇦🇺", zone: "AEST", time: "01:15 PM", color: "#c084fc" }
+    { id: 4, name: "Tokyo, Japan", flag: "🇯🇵", zone: "JST", time: "12:15 PM", color: "#00ff88" }
   ]);
 
+  // Audio Beep Helper
   const playBeep = () => {
     if (isMuted) return;
     try {
@@ -67,10 +81,10 @@ export default function App() {
       const gain = audioCtx.createGain();
       osc.connect(gain);
       gain.connect(audioCtx.destination);
-      osc.frequency.value = 800;
+      osc.frequency.value = 850;
       gain.gain.value = 0.15;
       osc.start();
-      osc.stop(audioCtx.currentTime + 0.2);
+      osc.stop(audioCtx.currentTime + 0.15);
     } catch (e) {
       console.log(e);
     }
@@ -135,36 +149,43 @@ export default function App() {
     }
   };
 
-  const handleAddCity = () => {
-    const cityName = prompt("Enter City Name (e.g. Paris, France):");
-    if (!cityName) return;
-    const timeStr = prompt("Enter Current Time (e.g. 05:45 PM):", "05:45 PM");
-    setCities((prev) => [
-      ...prev,
-      { id: Date.now(), name: cityName, flag: "🌐", zone: "GMT", time: timeStr, color: "#00f0ff" }
-    ]);
+  // Add Alarm Submission
+  const saveNewAlarm = (e) => {
+    e.preventDefault();
+    if (!newAlarmTime) return;
+
+    const [h, m] = newAlarmTime.split(":");
+    let hoursInt = parseInt(h, 10);
+    const ampmStr = hoursInt >= 12 ? "PM" : "AM";
+    hoursInt = hoursInt % 12 || 12;
+    const formattedAlarmTime = `${pad(hoursInt)}:${m} ${ampmStr}`;
+
+    const newObj = {
+      id: Date.now(),
+      time: formattedAlarmTime,
+      label: newAlarmLabel.trim() || "Quick Alarm",
+      active: true
+    };
+
+    setAlarms([newObj, ...alarms]);
+    setNewAlarmLabel("");
+    setShowAlarmModal(false);
+    playBeep();
   };
 
-  const handleAddAlarm = () => {
-    const alarmTime = prompt("Set Alarm Time (e.g. 06:00 AM):", "06:00 AM");
-    if (!alarmTime) return;
-    const alarmLabel = prompt("Alarm Label:", "Morning Focus");
-    setAlarms((prev) => [
-      ...prev,
-      { id: Date.now(), time: alarmTime, label: alarmLabel || "Custom Alarm", active: true }
-    ]);
-  };
-
-  const handleCustomTimer = () => {
-    const mins = prompt("Enter Minutes for Timer:", "10");
-    const num = parseInt(mins, 10);
-    if (!isNaN(num) && num > 0) {
-      setTimerRunning(false);
-      setTimerPreset("Custom");
-      setTimerLeft(num * 60);
+  // Add Event Handler for Selected Calendar Day
+  const handleAddCalendarEvent = () => {
+    const eventName = prompt(`Add Live Event for August ${selectedDay}, 2026:`);
+    if (eventName && eventName.trim()) {
+      setEvents({
+        ...events,
+        [selectedDay]: eventName.trim()
+      });
+      playBeep();
     }
   };
 
+  // Time Calculation
   const rawHours = time.getHours();
   const displayHours = is24Hour ? pad(rawHours) : pad(rawHours % 12 || 12);
   const minutes = pad(time.getMinutes());
@@ -235,8 +256,8 @@ export default function App() {
 
           <div className="top-ctrls">
             <div className="circle-btn" onClick={() => {
-              const query = prompt("Search Dashboard Feature:");
-              if (query) alert(`Navigating to ${query}`);
+              const q = prompt("Search Dashboard Feature:");
+              if (q) alert(`Navigating to ${q}`);
             }}>
               <Search size={14} />
             </div>
@@ -262,7 +283,7 @@ export default function App() {
         <div className="grid-row-1">
           {/* Main Hero Clock */}
           <div className="card-neon glow-cyan">
-            {/* India Map & Ashoka Chakra Vector */}
+            {/* India Map & Chakra Vector */}
             <svg className="india-map-bg" viewBox="0 0 200 200" fill="none">
               <path
                 d="M100 20 C120 25 130 40 145 50 C160 60 175 75 165 95 C155 110 145 130 135 150 C125 170 115 185 100 195 C85 185 75 170 65 150 C55 130 45 110 35 95 C25 75 40 60 55 50 C70 40 80 25 100 20 Z"
@@ -287,7 +308,7 @@ export default function App() {
               ))}
             </svg>
 
-            {/* Monuments Vector Silhouette */}
+            {/* Monuments Vector Outline */}
             <svg className="monuments-silhouette" viewBox="0 0 600 80" fill="none" stroke="#00f0ff" strokeWidth="1.2">
               <path d="M50 75 L50 25 L80 25 L80 75 M50 35 L80 35 M60 75 L60 45 C60 40 70 40 70 45 L70 75" />
               <path d="M140 75 L140 30 C140 20 160 20 160 30 L160 75 M150 15 L150 20 M120 75 L120 40 L130 40 L130 75 M170 75 L170 40 L180 40 L180 75" />
@@ -330,10 +351,7 @@ export default function App() {
                       fontSize: "11px",
                       cursor: "pointer"
                     }}
-                    onClick={() => {
-                      playBeep();
-                      setIs24Hour(false);
-                    }}
+                    onClick={() => { playBeep(); setIs24Hour(false); }}
                   >
                     12H
                   </button>
@@ -347,10 +365,7 @@ export default function App() {
                       fontSize: "11px",
                       cursor: "pointer"
                     }}
-                    onClick={() => {
-                      playBeep();
-                      setIs24Hour(true);
-                    }}
+                    onClick={() => { playBeep(); setIs24Hour(true); }}
                   >
                     24H
                   </button>
@@ -365,28 +380,48 @@ export default function App() {
             </div>
           </div>
 
-          {/* Calendar */}
+          {/* Interactive Live Events Calendar */}
           <div className="card-neon glow-purple">
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", fontWeight: "bold" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "12px", fontWeight: "bold" }}>
               <span style={{ color: "#c084fc" }}>📅 CALENDAR</span>
-              <span>AUGUST 2026</span>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <span>AUGUST 2026</span>
+                <button
+                  style={{ background: "rgba(0, 255, 136, 0.15)", border: "1px solid #00ff88", color: "#00ff88", borderRadius: "4px", padding: "1px 5px", fontSize: "9px", cursor: "pointer" }}
+                  onClick={handleAddCalendarEvent}
+                >
+                  + Event
+                </button>
+              </div>
             </div>
+
             <div className="cal-grid">
               {["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"].map((d, i) => (
                 <span key={i} className="cal-head">{d}</span>
               ))}
-              {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
-                <span
-                  key={d}
-                  className={`cal-cell ${d === time.getDate() ? "today" : ""}`}
-                  onClick={() => alert(`Events for August ${d}, 2026: No scheduled events.`)}
-                >
-                  {d}
-                </span>
-              ))}
+              {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => {
+                const hasEvent = Boolean(events[d]);
+                return (
+                  <span
+                    key={d}
+                    className={`cal-cell ${d === selectedDay ? "today" : ""} ${hasEvent ? "has-event" : ""}`}
+                    onClick={() => {
+                      playBeep();
+                      setSelectedDay(d);
+                    }}
+                  >
+                    {d}
+                  </span>
+                );
+              })}
             </div>
-            <div style={{ marginTop: "auto", fontSize: "11px", color: "#94a3b8", borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: "4px" }}>
-              🟢 {time.getDate()} AUGUST 2026 - No events today
+
+            {/* Dynamic Event Viewer for Selected Date */}
+            <div className="calendar-event-footer">
+              <span style={{ color: "#00ff88", fontWeight: "bold" }}>🟢 {selectedDay} AUG 2026:</span>{" "}
+              <span style={{ color: events[selectedDay] ? "#00f0ff" : "#94a3b8" }}>
+                {events[selectedDay] || "No events scheduled for this day"}
+              </span>
             </div>
           </div>
         </div>
@@ -417,7 +452,13 @@ export default function App() {
           <div className="card-neon glow-cyan">
             <div style={{ display: "flex", justifyContent: "space-between", color: "#00f0ff", fontSize: "12px", fontWeight: "bold", marginBottom: "4px" }}>
               <span>🌐 WORLD CLOCK</span>
-              <span style={{ color: "#00ff88", cursor: "pointer" }} onClick={handleAddCity}>+ Add City</span>
+              <span style={{ color: "#00ff88", cursor: "pointer" }} onClick={() => {
+                const cityName = prompt("Enter City Name (e.g. Paris, France):");
+                if (cityName) {
+                  const tStr = prompt("Enter Current Time (e.g. 05:45 PM):", "05:45 PM");
+                  setCities([...cities, { id: Date.now(), name: cityName, flag: "🌐", zone: "GMT", time: tStr || "12:00 PM", color: "#00f0ff" }]);
+                }
+              }}>+ Add City</span>
             </div>
             <div className="city-item active-city">
               <span>🇮🇳 New Delhi, India</span>
@@ -441,7 +482,7 @@ export default function App() {
               <button className="tool-card-btn tc-orange" onClick={() => { playBeep(); setTimerRunning(!timerRunning); }}>
                 <TimerIcon size={15} /> Timer
               </button>
-              <button className="tool-card-btn tc-cyan" onClick={handleAddAlarm}>
+              <button className="tool-card-btn tc-cyan" onClick={() => setShowAlarmModal(true)}>
                 <Bell size={15} /> Alarm
               </button>
               <button className="tool-card-btn tc-pink" onClick={() => {
@@ -461,7 +502,7 @@ export default function App() {
                 <Clock size={15} /> Pomodoro
               </button>
               <button className="tool-card-btn tc-yellow" onClick={() => {
-                const note = prompt("Enter Quick Note:", "Work in progress");
+                const note = prompt("Enter Quick Note:", "Focus on tasks");
                 if (note) alert(`Note Saved: "${note}"`);
               }}>
                 <FileText size={15} /> Notes
@@ -536,9 +577,6 @@ export default function App() {
                     {m}m
                   </button>
                 ))}
-                <button className="preset-btn" onClick={handleCustomTimer}>
-                  Custom
-                </button>
               </div>
               <div style={{ display: "flex", gap: "6px" }}>
                 <button className="btn-neon bg-neon-orange" onClick={() => { playBeep(); setTimerRunning(!timerRunning); }}>
@@ -559,29 +597,32 @@ export default function App() {
             </div>
           </div>
 
-          {/* Alarms with Switch Toggles */}
+          {/* Alarms with Add Modal trigger */}
           <div className="card-neon glow-purple">
             <div style={{ display: "flex", justifyContent: "space-between", color: "#c084fc", fontSize: "12px", fontWeight: "bold" }}>
               <span>🔔 ALARM</span>
-              <span style={{ color: "#00ff88", cursor: "pointer" }} onClick={handleAddAlarm}>+ Add Alarm</span>
+              <span style={{ color: "#00ff88", cursor: "pointer" }} onClick={() => setShowAlarmModal(true)}>+ Add Alarm</span>
             </div>
-            {alarms.slice(0, 2).map((al) => (
-              <div key={al.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "4px" }}>
-                <div>
-                  <h3 style={{ fontFamily: "Orbitron", fontSize: "14px", color: al.active ? "#fff" : "#64748b" }}>{al.time}</h3>
-                  <p style={{ fontSize: "9px", color: "#94a3b8" }}>{al.label}</p>
+            
+            <div className="alarm-items-scroll">
+              {alarms.map((al) => (
+                <div key={al.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "4px" }}>
+                  <div>
+                    <h3 style={{ fontFamily: "Orbitron", fontSize: "14px", color: al.active ? "#fff" : "#64748b" }}>{al.time}</h3>
+                    <p style={{ fontSize: "9px", color: "#94a3b8" }}>{al.label}</p>
+                  </div>
+                  <div
+                    className={`neon-switch ${al.active ? "active" : ""}`}
+                    onClick={() => {
+                      playBeep();
+                      setAlarms(alarms.map((a) => (a.id === al.id ? { ...a, active: !a.active } : a)));
+                    }}
+                  >
+                    <div className="switch-dot"></div>
+                  </div>
                 </div>
-                <div
-                  className={`neon-switch ${al.active ? "active" : ""}`}
-                  onClick={() => {
-                    playBeep();
-                    setAlarms(alarms.map((a) => (a.id === al.id ? { ...a, active: !a.active } : a)));
-                  }}
-                >
-                  <div className="switch-dot"></div>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
 
@@ -598,6 +639,45 @@ export default function App() {
           </div>
         </footer>
       </main>
+
+      {/* Cyberpunk Neon Modal for Add Alarm */}
+      {showAlarmModal && (
+        <div className="modal-backdrop">
+          <div className="cyber-modal">
+            <div className="modal-header">
+              <h3>🔔 SET NEW ALARM</h3>
+              <button className="modal-close" onClick={() => setShowAlarmModal(false)}>
+                <X size={18} />
+              </button>
+            </div>
+            <form onSubmit={saveNewAlarm} className="modal-form">
+              <label>Select Time</label>
+              <input
+                type="time"
+                value={newAlarmTime}
+                onChange={(e) => setNewAlarmTime(e.target.value)}
+                required
+                className="neon-input"
+              />
+
+              <label>Alarm Label</label>
+              <input
+                type="text"
+                placeholder="e.g. Gym Workout / Coding Sprint"
+                value={newAlarmLabel}
+                onChange={(e) => setNewAlarmLabel(e.target.value)}
+                className="neon-input"
+              />
+
+              <div className="modal-actions">
+                <button type="submit" className="btn-neon bg-neon-green" style={{ width: "100%", padding: "10px" }}>
+                  Save & Enable Alarm
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
