@@ -1,704 +1,603 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import './App.css';
+import React, { useState, useEffect, useRef } from "react";
+import {
+  LayoutDashboard,
+  Globe,
+  Calendar as CalIcon,
+  Wrench,
+  Bell,
+  Settings,
+  Sun,
+  Search,
+  Moon,
+  ChevronDown,
+  Volume2,
+  VolumeX,
+  Maximize2,
+  Minimize2,
+  Watch,
+  Timer as TimerIcon,
+  Hourglass,
+  Clock,
+  FileText,
+  Palette
+} from "lucide-react";
+import "./App.css";
 
 export default function App() {
   const [time, setTime] = useState(new Date());
   const [is24Hour, setIs24Hour] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [activeNav, setActiveNav] = useState("Dashboard");
+  const [activeLang, setActiveLang] = useState("EN");
+  const [isDarkMode, setIsDarkMode] = useState(true);
 
-  // Stopwatch
+  // Stopwatch States
   const [swTime, setSwTime] = useState(0);
   const [swRunning, setSwRunning] = useState(false);
+  const [laps, setLaps] = useState([]);
+  const swRef = useRef(null);
 
-  // Timer
-  const [timerSeconds, setTimerSeconds] = useState(25 * 60);
+  // Timer States
+  const [timerLeft, setTimerLeft] = useState(25 * 60);
   const [timerRunning, setTimerRunning] = useState(false);
-
-  // UI
-  const [activeModal, setActiveModal] = useState(null);
-  const [notes, setNotes] = useState(
-    'Daily Targets:\n- Bharat Clock UI Pro\n- Launch on GitHub'
-  );
+  const [timerPreset, setTimerPreset] = useState("25");
+  const timerRef = useRef(null);
 
   // Alarms
-  const [alarm1, setAlarm1] = useState(true);
-  const [alarm2, setAlarm2] = useState(false);
+  const [alarms, setAlarms] = useState([
+    { id: 1, time: "07:00 AM", label: "Daily Wake Up", active: true },
+    { id: 2, time: "08:30 AM", label: "Mon, Tue, Wed, Thu, Fri", active: false }
+  ]);
 
-  // Clock update
+  // World Cities List
+  const [cities, setCities] = useState([
+    { id: 1, name: "New York, USA", flag: "🇺🇸", zone: "EDT", time: "11:15 PM", color: "#00f0ff" },
+    { id: 2, name: "London, UK", flag: "🇬🇧", zone: "BST", time: "04:15 AM", color: "#ff9900" },
+    { id: 3, name: "Dubai, UAE", flag: "🇦🇪", zone: "GST", time: "07:15 AM", color: "#ff007f" },
+    { id: 4, name: "Tokyo, Japan", flag: "🇯🇵", zone: "JST", time: "12:15 PM", color: "#00ff88" },
+    { id: 5, name: "Sydney, Australia", flag: "🇦🇺", zone: "AEST", time: "01:15 PM", color: "#c084fc" }
+  ]);
+
+  const playBeep = () => {
+    if (isMuted) return;
+    try {
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.frequency.value = 800;
+      gain.gain.value = 0.15;
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.2);
+    } catch (e) {
+      console.log(e);
+    }
+  };
+
+  // Clock Update
   useEffect(() => {
-    const interval = setInterval(() => {
-      setTime(new Date());
-    }, 1000);
-
-    return () => clearInterval(interval);
+    const clockInterval = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(clockInterval);
   }, []);
 
-  // Stopwatch update
+  // Stopwatch Logic
   useEffect(() => {
-    if (!swRunning) return;
-
-    const interval = setInterval(() => {
-      setSwTime((prev) => prev + 10);
-    }, 10);
-
-    return () => clearInterval(interval);
+    if (swRunning) {
+      swRef.current = setInterval(() => setSwTime((p) => p + 10), 10);
+    } else {
+      clearInterval(swRef.current);
+    }
+    return () => clearInterval(swRef.current);
   }, [swRunning]);
 
-  // Timer update
+  // Timer Logic
   useEffect(() => {
-    if (!timerRunning) return;
-
-    if (timerSeconds <= 0) {
+    if (timerRunning && timerLeft > 0) {
+      timerRef.current = setInterval(() => setTimerLeft((p) => (p > 0 ? p - 1 : 0)), 1000);
+    } else if (timerLeft === 0 && timerRunning) {
       setTimerRunning(false);
-      window.setTimeout(() => {
-        alert('⏰ Timer Over!');
-      }, 0);
-      return;
+      clearInterval(timerRef.current);
+      playBeep();
+      alert("⏰ Timer Finished!");
+    } else {
+      clearInterval(timerRef.current);
     }
+    return () => clearInterval(timerRef.current);
+  }, [timerRunning, timerLeft, isMuted]);
 
-    const interval = setInterval(() => {
-      setTimerSeconds((prev) => Math.max(0, prev - 1));
-    }, 1000);
+  const pad = (n, len = 2) => String(n).padStart(len, "0");
 
-    return () => clearInterval(interval);
-  }, [timerRunning, timerSeconds]);
-
-  // ---------- FORMATTERS ----------
-
-  const formatSW = () => {
-    const ms = String(swTime % 1000).padStart(3, '0');
-    const sec = String(Math.floor(swTime / 1000) % 60).padStart(2, '0');
-    const min = String(Math.floor(swTime / 60000) % 60).padStart(2, '0');
-    const hr = String(Math.floor(swTime / 3600000)).padStart(2, '0');
-
-    return `${hr}:${min}:${sec}.${ms}`;
+  const formatStopwatch = (ms) => {
+    const min = Math.floor(ms / 60000);
+    const sec = Math.floor((ms % 60000) / 1000);
+    const milli = Math.floor((ms % 1000) / 10);
+    return `${pad(min)}:${pad(sec)}.${pad(milli, 2)}`;
   };
 
-  const formatTR = (seconds) => {
-    const hr = String(Math.floor(seconds / 3600)).padStart(2, '0');
-    const min = String(Math.floor((seconds % 3600) / 60)).padStart(2, '0');
-    const sec = String(seconds % 60).padStart(2, '0');
-
-    return `${hr}:${min}:${sec}`;
+  const formatTimer = (sec) => {
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    const s = sec % 60;
+    return `${pad(h)}:${pad(m)}:${pad(s)}`;
   };
 
-  // ---------- CURRENT TIME ----------
-
-  const hours = time.getHours();
-
-  const formattedHours = is24Hour
-    ? String(hours).padStart(2, '0')
-    : String(hours % 12 || 12).padStart(2, '0');
-
-  const formattedMinutes = String(time.getMinutes()).padStart(2, '0');
-  const formattedSeconds = String(time.getSeconds()).padStart(2, '0');
-
-  const ampm = hours >= 12 ? 'PM' : 'AM';
-
-  // ---------- DATE ----------
-
-  const dateText = time.toLocaleDateString('en-IN', {
-    weekday: 'long',
-    day: '2-digit',
-    month: 'long',
-    year: 'numeric',
-    timeZone: 'Asia/Kolkata',
-  });
-
-  const monthText = time.toLocaleDateString('en-IN', {
-    month: 'long',
-    year: 'numeric',
-    timeZone: 'Asia/Kolkata',
-  });
-
-  const currentDay = Number(
-    time.toLocaleDateString('en-IN', {
-      day: '2-digit',
-      timeZone: 'Asia/Kolkata',
-    })
-  );
-
-  // ---------- CALENDAR ----------
-
-  const calendarDays = useMemo(() => {
-    const year = time.getFullYear();
-    const month = time.getMonth();
-
-    const firstDay = new Date(year, month, 1).getDay();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-    const previousMonthDays = new Date(year, month, 0).getDate();
-
-    const days = [];
-
-    for (let i = firstDay - 1; i >= 0; i--) {
-      days.push({
-        day: previousMonthDays - i,
-        muted: true,
-      });
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+      setIsFullscreen(true);
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+        setIsFullscreen(false);
+      }
     }
+  };
 
-    for (let day = 1; day <= daysInMonth; day++) {
-      days.push({
-        day,
-        muted: false,
-        today: day === currentDay,
-      });
+  const handleAddCity = () => {
+    const cityName = prompt("Enter City Name (e.g. Paris, France):");
+    if (!cityName) return;
+    const timeStr = prompt("Enter Current Time (e.g. 05:45 PM):", "05:45 PM");
+    setCities((prev) => [
+      ...prev,
+      { id: Date.now(), name: cityName, flag: "🌐", zone: "GMT", time: timeStr, color: "#00f0ff" }
+    ]);
+  };
+
+  const handleAddAlarm = () => {
+    const alarmTime = prompt("Set Alarm Time (e.g. 06:00 AM):", "06:00 AM");
+    if (!alarmTime) return;
+    const alarmLabel = prompt("Alarm Label:", "Morning Focus");
+    setAlarms((prev) => [
+      ...prev,
+      { id: Date.now(), time: alarmTime, label: alarmLabel || "Custom Alarm", active: true }
+    ]);
+  };
+
+  const handleCustomTimer = () => {
+    const mins = prompt("Enter Minutes for Timer:", "10");
+    const num = parseInt(mins, 10);
+    if (!isNaN(num) && num > 0) {
+      setTimerRunning(false);
+      setTimerPreset("Custom");
+      setTimerLeft(num * 60);
     }
-
-    while (days.length % 7 !== 0) {
-      days.push({
-        day: days.length - firstDay - daysInMonth + 1,
-        muted: true,
-      });
-    }
-
-    return days;
-  }, [time, currentDay]);
-
-  // ---------- WORLD CLOCK ----------
-
-  const worldClock = (zone) =>
-    time.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true,
-      timeZone: zone,
-    });
-
-  // ---------- TIMER CONTROLS ----------
-
-  const setTimer = (seconds) => {
-    setTimerRunning(false);
-    setTimerSeconds(seconds);
   };
 
-  const startPomodoro = () => {
-    setTimerRunning(false);
-    setTimerSeconds(25 * 60);
-
-    setTimeout(() => {
-      setTimerRunning(true);
-    }, 50);
-  };
-
-  // ---------- MODAL ----------
-
-  const closeModal = () => {
-    setActiveModal(null);
-  };
+  const rawHours = time.getHours();
+  const displayHours = is24Hour ? pad(rawHours) : pad(rawHours % 12 || 12);
+  const minutes = pad(time.getMinutes());
+  const seconds = pad(time.getSeconds());
+  const ampm = rawHours >= 12 ? "PM" : "AM";
 
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-        padding: '12px 16px',
-        boxSizing: 'border-box',
-      }}
-    >
-      {/* ================= TOP NAVBAR ================= */}
-
-      <header
-        className="cyber-panel border-gradient-purple"
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          padding: '10px 20px',
-          marginBottom: '12px',
-          gap: '12px',
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
-          }}
-        >
-          <span style={{ fontSize: '26px' }}>🇮🇳</span>
-
-          <div>
-            <h1
-              className="font-tech"
-              style={{
-                fontSize: '20px',
-                fontWeight: 'bold',
-                margin: 0,
-                letterSpacing: '1px',
-                background:
-                  'linear-gradient(90deg, #ff9933, #ffffff, #138808)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-              }}
-            >
-              भारत CLOCK
-            </h1>
-
-            <span
-              style={{
-                fontSize: '9px',
-                color: '#94a3b8',
-              }}
-            >
-              Made in India ❤️
-            </span>
-          </div>
-        </div>
-
-        <nav
-          style={{
-            display: 'flex',
-            gap: '6px',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            justifyContent: 'center',
-          }}
-        >
-          <button
-            style={{
-              padding: '6px 14px',
-              borderRadius: '20px',
-              background: 'rgba(59, 130, 246, 0.2)',
-              border: '1px solid #3b82f6',
-              color: '#60a5fa',
-              fontSize: '11px',
-              fontWeight: 'bold',
-              cursor: 'pointer',
-            }}
-          >
-            ⌂ Home
-          </button>
-
-          <button
-            onClick={() => setActiveModal('world')}
-            style={navButtonStyle}
-          >
-            🌐 World Clock
-          </button>
-
-          <button
-            onClick={() => setActiveModal('calendar')}
-            style={navButtonStyle}
-          >
-            📅 Calendar
-          </button>
-
-          <button
-            onClick={() => setActiveModal('notes')}
-            style={navButtonStyle}
-          >
-            🛠️ Tools
-          </button>
-
-          <button
-            onClick={() => setActiveModal('alarm')}
-            style={navButtonStyle}
-          >
-            🔔 Alarm
-          </button>
-        </nav>
-
-        <div
-          style={{
-            display: 'flex',
-            gap: '8px',
-            alignItems: 'center',
-          }}
-        >
-          <button
-            onClick={() => setIs24Hour((prev) => !prev)}
-            style={{
-              padding: '4px 10px',
-              borderRadius: '6px',
-              background: '#312e81',
-              border: '1px solid #818cf8',
-              color: '#e0e7ff',
-              fontSize: '11px',
-              fontWeight: 'bold',
-              cursor: 'pointer',
-            }}
-          >
-            {is24Hour ? '24H' : '12H'}
-          </button>
-
-          <span
-            style={{
-              fontSize: '11px',
-              color: '#cbd5e1',
-              background: 'rgba(255,255,255,0.06)',
-              padding: '5px 8px',
-              borderRadius: '6px',
-            }}
-          >
-            EN ▾
-          </span>
-        </div>
-      </header>
-
-      {/* ================= MAIN BODY ================= */}
-
-      <div
-        style={{
-          display: 'flex',
-          gap: '12px',
-          flex: 1,
-          minHeight: 0,
-        }}
-      >
-        {/* SIDEBAR */}
-
-        <aside
-          className="cyber-panel border-gradient-cyan"
-          style={{
-            width: '70px',
-            minWidth: '70px',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: '14px 0',
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '14px',
-              alignItems: 'center',
-              width: '100%',
-            }}
-          >
-            <div
-              style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '10px',
-                background: 'rgba(0,240,255,0.15)',
-                border: '1px solid #00f0ff',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#00f0ff',
-                cursor: 'pointer',
-              }}
-            >
-              ⊞
-            </div>
-
-            <SidebarButton
-              icon="🌐"
-              text="World"
-              onClick={() => setActiveModal('world')}
-            />
-
-            <SidebarButton
-              icon="📅"
-              text="Calendar"
-              onClick={() => setActiveModal('calendar')}
-            />
-
-            <SidebarButton
-              icon="🛠️"
-              text="Tools"
-              onClick={() => setActiveModal('notes')}
-            />
-
-            <SidebarButton
-              icon="🔔"
-              text="Alarm"
-              onClick={() => setActiveModal('alarm')}
-            />
-          </div>
-
-          <div
-            style={{
-              width: '56px',
-              padding: '4px',
-              borderRadius: '6px',
-              background: 'rgba(34,197,94,0.15)',
-              border: '1px solid #22c55e',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-            }}
-          >
-            <span
-              style={{
-                fontSize: '8px',
-                color: '#4ade80',
-                fontWeight: 'bold',
-              }}
-            >
-              LIVE
-            </span>
-
-            <span
-              style={{
-                fontSize: '8px',
-                color: '#4ade80',
-              }}
-            >
-              ● ONLINE
-            </span>
-          </div>
-        </aside>
-
-        {/* ================= DASHBOARD ================= */}
-
-        <div
-          style={{
-            flex: 1,
-            display: 'grid',
-            gridTemplateColumns: '1fr 1.3fr 1.1fr',
-            gap: '12px',
-            minWidth: 0,
-          }}
-        >
-          {/* HERO CLOCK */}
-
-          <div
-            className="cyber-panel border-gradient-hero"
-            style={{
-              gridColumn: 'span 2',
-              padding: '20px',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              position: 'relative',
-              overflow: 'hidden',
-              minHeight: '220px',
-            }}
-          >
-            <div
-              style={{
-                position: 'absolute',
-                right: '15px',
-                top: '10px',
-                width: '230px',
-                height: '190px',
-                pointerEvents: 'none',
-                opacity: 0.85,
-              }}
-            >
-              <svg
-                viewBox="0 0 200 200"
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  stroke: '#00ff88',
-                  strokeWidth: '1.2',
-                  fill: 'none',
+    <div className={`app-container ${!isDarkMode ? "alt-theme" : ""}`}>
+      {/* 1. Left Sidebar */}
+      <aside className="sidebar">
+        <div className="sidebar-menu">
+          {[
+            { name: "Dashboard", icon: LayoutDashboard },
+            { name: "World Clock", icon: Globe },
+            { name: "Calendar", icon: CalIcon },
+            { name: "Tools", icon: Wrench },
+            { name: "Alarm", icon: Bell },
+            { name: "Settings", icon: Settings },
+            { name: "Theme", icon: Palette },
+          ].map((item) => {
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.name}
+                className={`nav-item ${activeNav === item.name ? "active" : ""}`}
+                onClick={() => {
+                  playBeep();
+                  if (item.name === "Theme") setIsDarkMode(!isDarkMode);
+                  else setActiveNav(item.name);
                 }}
               >
-                <path
-                  d="M 90,15 L 110,30 L 105,45 L 140,50 L 170,75 L 160,110 L 130,140 L 110,185 L 95,185 L 85,140 L 60,115 L 45,95 L 70,70 L 60,40 Z"
-                  strokeDasharray="3,3"
-                />
+                <Icon size={19} /> {item.name}
+              </button>
+            );
+          })}
+        </div>
+        <div className="live-status-box">
+          LIVE STATUS<br />● ONLINE
+        </div>
+      </aside>
 
-                <circle
-                  cx="100"
-                  cy="95"
-                  r="22"
-                  stroke="#00f0ff"
-                  strokeWidth="1.5"
-                  fill="rgba(0, 240, 255, 0.05)"
-                />
-
-                {[...Array(24)].map((_, i) => (
-                  <line
-                    key={i}
-                    x1="100"
-                    y1="95"
-                    x2={
-                      100 +
-                      22 * Math.cos((i * 15 * Math.PI) / 180)
-                    }
-                    y2={
-                      95 +
-                      22 * Math.sin((i * 15 * Math.PI) / 180)
-                    }
-                    stroke="#00f0ff"
-                    strokeWidth="1"
-                  />
-                ))}
-              </svg>
+      {/* 2. Main Viewport */}
+      <main className="main-viewport">
+        {/* Top Nav */}
+        <header className="top-nav">
+          <div className="brand-box">
+            <span style={{ fontSize: "24px" }}>🇮🇳</span>
+            <div className="brand-text">
+              <h2>भारत CLOCK</h2>
+              <span>Made in India ❤️</span>
             </div>
+          </div>
 
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                position: 'relative',
-                zIndex: 2,
-              }}
-            >
-              <span
-                className="font-tech"
-                style={{
-                  fontSize: '13px',
-                  color: '#00ff88',
-                  letterSpacing: '1px',
+          <div className="top-tabs">
+            {["Home", "World Clock", "Calendar", "Tools", "Alarm", "Settings"].map((t) => (
+              <button
+                key={t}
+                className={`tab-btn ${activeNav === t || (t === "Home" && activeNav === "Dashboard") ? "active" : ""}`}
+                onClick={() => {
+                  playBeep();
+                  setActiveNav(t === "Home" ? "Dashboard" : t);
                 }}
               >
-                🧭 INDIA STANDARD TIME{' '}
-                <span style={{ color: '#94a3b8' }}>
-                  UTC +5:30
+                {t}
+              </button>
+            ))}
+          </div>
+
+          <div className="top-ctrls">
+            <div className="circle-btn" onClick={() => {
+              const query = prompt("Search Dashboard Feature:");
+              if (query) alert(`Navigating to ${query}`);
+            }}>
+              <Search size={14} />
+            </div>
+            <div className="circle-btn" onClick={() => {
+              playBeep();
+              setIsDarkMode(!isDarkMode);
+            }}>
+              {isDarkMode ? <Moon size={14} /> : <Sun size={14} />}
+            </div>
+            <div
+              className="lang-dropdown"
+              onClick={() => {
+                playBeep();
+                setActiveLang(activeLang === "EN" ? "HI" : "EN");
+              }}
+            >
+              {activeLang} <ChevronDown size={13} />
+            </div>
+          </div>
+        </header>
+
+        {/* Row 1: Clock + Calendar */}
+        <div className="grid-row-1">
+          {/* Main Hero Clock */}
+          <div className="card-neon glow-cyan">
+            {/* India Map & Ashoka Chakra Vector */}
+            <svg className="india-map-bg" viewBox="0 0 200 200" fill="none">
+              <path
+                d="M100 20 C120 25 130 40 145 50 C160 60 175 75 165 95 C155 110 145 130 135 150 C125 170 115 185 100 195 C85 185 75 170 65 150 C55 130 45 110 35 95 C25 75 40 60 55 50 C70 40 80 25 100 20 Z"
+                stroke="#00f0ff"
+                strokeWidth="1.2"
+                strokeDasharray="2 3"
+                opacity="0.4"
+              />
+              <circle cx="100" cy="105" r="26" stroke="#00e5ff" strokeWidth="1.5" />
+              <circle cx="100" cy="105" r="6" fill="#00e5ff" />
+              {Array.from({ length: 24 }).map((_, i) => (
+                <line
+                  key={i}
+                  x1="100"
+                  y1="105"
+                  x2={100 + 24 * Math.cos((i * 15 * Math.PI) / 180)}
+                  y2={105 + 24 * Math.sin((i * 15 * Math.PI) / 180)}
+                  stroke="#00e5ff"
+                  strokeWidth="0.8"
+                  opacity="0.7"
+                />
+              ))}
+            </svg>
+
+            {/* Monuments Vector Silhouette */}
+            <svg className="monuments-silhouette" viewBox="0 0 600 80" fill="none" stroke="#00f0ff" strokeWidth="1.2">
+              <path d="M50 75 L50 25 L80 25 L80 75 M50 35 L80 35 M60 75 L60 45 C60 40 70 40 70 45 L70 75" />
+              <path d="M140 75 L140 30 C140 20 160 20 160 30 L160 75 M150 15 L150 20 M120 75 L120 40 L130 40 L130 75 M170 75 L170 40 L180 40 L180 75" />
+              <path d="M230 75 C240 40 250 30 260 75 M240 75 C250 45 260 45 270 75 M250 75 C260 50 270 50 280 75" />
+              <path d="M340 75 L348 10 L352 10 L360 75 M343 55 L357 55 M345 35 L355 35" />
+            </svg>
+
+            <div className="clock-display-wrap">
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ color: "#00f0ff", fontWeight: "700", fontSize: "13px" }}>
+                  ✦ {activeLang === "HI" ? "भारतीय मानक समय" : "INDIA STANDARD TIME"}{" "}
+                  <span style={{ color: "#94a3b8" }}>UTC +5:30</span>
                 </span>
-              </span>
+                <span style={{ background: "rgba(0,255,136,0.15)", color: "#00ff88", border: "1px solid #00ff88", padding: "2px 8px", borderRadius: "10px", fontSize: "11px", fontWeight: "bold" }}>
+                  ● LIVE
+                </span>
+              </div>
 
-              <span
-                style={{
-                  background: '#052e16',
-                  border: '1px solid #22c55e',
-                  color: '#4ade80',
-                  padding: '2px 8px',
-                  borderRadius: '12px',
-                  fontSize: '10px',
-                  fontWeight: 'bold',
-                }}
-              >
-                ● LIVE
-              </span>
+              <div className="clock-main-digits">
+                <span className="digit-pink">{displayHours}</span>
+                <span style={{ color: "#ff007f", margin: "0 4px" }}>:</span>
+                <span className="digit-cyan">{minutes}</span>
+                <span style={{ color: "#00f0ff", margin: "0 4px" }}>:</span>
+                <span className="digit-green">{seconds}</span>
+                {!is24Hour && <span className="ampm-tag">{ampm}</span>}
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: "6px" }}>
+                <div style={{ color: "#cbd5e1", fontSize: "12px" }}>
+                  <span>{time.toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).toUpperCase()}</span> • <span>📍 New Delhi, India</span>
+                </div>
+                <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                  <button
+                    style={{
+                      background: !is24Hour ? "rgba(255,255,255,0.15)" : "transparent",
+                      border: "1px solid rgba(255,255,255,0.2)",
+                      color: "#fff",
+                      padding: "2px 8px",
+                      borderRadius: "5px",
+                      fontSize: "11px",
+                      cursor: "pointer"
+                    }}
+                    onClick={() => {
+                      playBeep();
+                      setIs24Hour(false);
+                    }}
+                  >
+                    12H
+                  </button>
+                  <button
+                    style={{
+                      background: is24Hour ? "#7c3aed" : "transparent",
+                      border: "1px solid #7c3aed",
+                      color: "#fff",
+                      padding: "2px 8px",
+                      borderRadius: "5px",
+                      fontSize: "11px",
+                      cursor: "pointer"
+                    }}
+                    onClick={() => {
+                      playBeep();
+                      setIs24Hour(true);
+                    }}
+                  >
+                    24H
+                  </button>
+                  <div className="circle-btn small" onClick={() => setIsMuted(!isMuted)}>
+                    {isMuted ? <VolumeX size={12} /> : <Volume2 size={12} />}
+                  </div>
+                  <div className="circle-btn small" onClick={toggleFullscreen}>
+                    {isFullscreen ? <Minimize2 size={12} /> : <Maximize2 size={12} />}
+                  </div>
+                </div>
+              </div>
             </div>
+          </div>
 
-            <div
-              style={{
-                margin: '10px 0',
-                display: 'flex',
-                alignItems: 'baseline',
-                gap: '4px',
-                position: 'relative',
-                zIndex: 2,
-              }}
-            >
-              <span
-                className="font-digital glow-pink"
-                style={{
-                  fontSize: '72px',
-                  fontWeight: '900',
-                  letterSpacing: '2px',
-                }}
-              >
-                {formattedHours}
-              </span>
-
-              <span
-                className="font-digital glow-pink"
-                style={{
-                  fontSize: '72px',
-                  fontWeight: '900',
-                }}
-              >
-                :
-              </span>
-
-              <span
-                className="font-digital glow-cyan"
-                style={{
-                  fontSize: '72px',
-                  fontWeight: '900',
-                  letterSpacing: '2px',
-                }}
-              >
-                {formattedMinutes}
-              </span>
-
-              <span
-                className="font-digital glow-green"
-                style={{
-                  fontSize: '72px',
-                  fontWeight: '900',
-                }}
-              >
-                :
-              </span>
-
-              <span
-                className="font-digital glow-green"
-                style={{
-                  fontSize: '72px',
-                  fontWeight: '900',
-                }}
-              >
-                {formattedSeconds}
-              </span>
-
-              {!is24Hour && (
+          {/* Calendar */}
+          <div className="card-neon glow-purple">
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", fontWeight: "bold" }}>
+              <span style={{ color: "#c084fc" }}>📅 CALENDAR</span>
+              <span>AUGUST 2026</span>
+            </div>
+            <div className="cal-grid">
+              {["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"].map((d, i) => (
+                <span key={i} className="cal-head">{d}</span>
+              ))}
+              {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
                 <span
-                  className="font-digital glow-cyan"
-                  style={{
-                    fontSize: '24px',
-                    marginLeft: '10px',
-                  }}
+                  key={d}
+                  className={`cal-cell ${d === time.getDate() ? "today" : ""}`}
+                  onClick={() => alert(`Events for August ${d}, 2026: No scheduled events.`)}
                 >
-                  {ampm}
+                  {d}
                 </span>
-              )}
+              ))}
             </div>
+            <div style={{ marginTop: "auto", fontSize: "11px", color: "#94a3b8", borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: "4px" }}>
+              🟢 {time.getDate()} AUGUST 2026 - No events today
+            </div>
+          </div>
+        </div>
 
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                borderTop: '1px solid rgba(255,255,255,0.08)',
-                paddingTop: '8px',
-                fontSize: '12px',
-                color: '#cbd5e1',
-                position: 'relative',
-                zIndex: 2,
-                gap: '10px',
-              }}
-            >
-              <span
-                className="font-tech"
-                style={{
-                  letterSpacing: '1px',
-                }}
-              >
-                {dateText.toUpperCase()}
-              </span>
+        {/* Row 2: Weather + World Clock + Tools */}
+        <div className="grid-row-2">
+          {/* Weather Card */}
+          <div className="card-neon glow-cyan">
+            <div style={{ display: "flex", justifyContent: "space-between", color: "#00f0ff", fontSize: "12px", fontWeight: "bold" }}>
+              <span>☁️ WEATHER</span>
+              <span style={{ color: "#94a3b8" }}>📍 New Delhi, India</span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", margin: "4px 0" }}>
+              <Sun size={36} color="#ff9900" style={{ filter: "drop-shadow(0 0 10px #ff9900)" }} />
+              <h2 style={{ fontSize: "32px", fontWeight: "bold" }}>28°C</h2>
+              <div style={{ fontSize: "11px", color: "#94a3b8", textAlign: "right" }}>
+                <div>Humidity: 58%</div>
+                <div>Wind: 12 km/h</div>
+                <div>Pressure: 1012 hPa</div>
+              </div>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "10px", color: "#cbd5e1", marginTop: "auto", borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "4px" }}>
+              <span>WED 32°</span><span>THU 31°</span><span>FRI 30°</span><span>SAT 31°</span><span>SUN 32°</span>
+            </div>
+          </div>
 
-              <span
-                className="font-tech"
-                style={{
-                  color: '#94a3b8',
-                }}
-              >
-                📍 New Delhi, India
-              </span>
+          {/* World Clock Card */}
+          <div className="card-neon glow-cyan">
+            <div style={{ display: "flex", justifyContent: "space-between", color: "#00f0ff", fontSize: "12px", fontWeight: "bold", marginBottom: "4px" }}>
+              <span>🌐 WORLD CLOCK</span>
+              <span style={{ color: "#00ff88", cursor: "pointer" }} onClick={handleAddCity}>+ Add City</span>
+            </div>
+            <div className="city-item active-city">
+              <span>🇮🇳 New Delhi, India</span>
+              <strong style={{ color: "#00ff88" }}>{displayHours}:{minutes} {ampm}</strong>
+            </div>
+            {cities.slice(0, 4).map((c) => (
+              <div key={c.id} className="city-item">
+                <span>{c.flag} {c.name}</span>
+                <span style={{ color: c.color }}>{c.time}</span>
+              </div>
+            ))}
+          </div>
 
-              <div
-                style={{
-                  display: 'flex',
-                  gap: '4px',
-                  background: 'rgba(0,0,0,0.4)',
-                  padding: '2px',
-                  borderRadius: '6px',
-                }}
-              >
-                <button
-                  onClick={() => setIs24Hour(false)}
-                  style={{
-                    padding: '2px 8px',
-                    background: !is24Hour
-                      ? '#9333ea'
-                      : 'transparent',
-                    border: 'none',
-                    color: '#fff',
-                    borderRadius: '4px',
-                    fontSize: '10px',
-                    cursor: 'pointer',
+          {/* Interactive Tools Grid */}
+          <div className="card-neon glow-purple">
+            <div style={{ color: "#c084fc", fontSize: "12px", fontWeight: "bold", marginBottom: "4px" }}>🛠️ TOOLS</div>
+            <div className="tools-6-grid">
+              <button className="tool-card-btn tc-green" onClick={() => { playBeep(); setSwRunning(!swRunning); }}>
+                <Watch size={15} /> Stopwatch
+              </button>
+              <button className="tool-card-btn tc-orange" onClick={() => { playBeep(); setTimerRunning(!timerRunning); }}>
+                <TimerIcon size={15} /> Timer
+              </button>
+              <button className="tool-card-btn tc-cyan" onClick={handleAddAlarm}>
+                <Bell size={15} /> Alarm
+              </button>
+              <button className="tool-card-btn tc-pink" onClick={() => {
+                playBeep();
+                setTimerRunning(false);
+                setTimerPreset("5");
+                setTimerLeft(5 * 60);
+              }}>
+                <Hourglass size={15} /> 5m Count
+              </button>
+              <button className="tool-card-btn tc-red" onClick={() => {
+                playBeep();
+                setTimerRunning(false);
+                setTimerPreset("25");
+                setTimerLeft(25 * 60);
+              }}>
+                <Clock size={15} /> Pomodoro
+              </button>
+              <button className="tool-card-btn tc-yellow" onClick={() => {
+                const note = prompt("Enter Quick Note:", "Work in progress");
+                if (note) alert(`Note Saved: "${note}"`);
+              }}>
+                <FileText size={15} /> Notes
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Row 3: Stopwatch + Timer + Alarm */}
+        <div className="grid-row-3">
+          {/* Stopwatch */}
+          <div className="card-neon glow-cyan" style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+            <div>
+              <span style={{ color: "#00ff88", fontSize: "12px", fontWeight: "bold" }}>⏱️ STOPWATCH</span>
+              <h2 style={{ fontFamily: "Orbitron", fontSize: "18px", margin: "4px 0", color: "#00f0ff" }}>
+                {formatStopwatch(swTime)}
+              </h2>
+              <div style={{ display: "flex", gap: "6px" }}>
+                <button className="btn-neon bg-neon-green" onClick={() => { playBeep(); setSwRunning(!swRunning); }}>
+                  {swRunning ? "Pause" : "Start"}
+                </button>
+                <button className="btn-neon bg-outline" onClick={() => {
+                  if (swRunning) {
+                    playBeep();
+                    setLaps([...laps, formatStopwatch(swTime)]);
+                  }
+                }}>
+                  Lap ({laps.length})
+                </button>
+                <button className="btn-neon bg-neon-pink" onClick={() => {
+                  playBeep();
+                  setSwRunning(false);
+                  setSwTime(0);
+                  setLaps([]);
+                }}>
+                  Reset
+                </button>
+              </div>
+            </div>
+            <div className="radar-concentric">
+              <div style={{ width: "42px", height: "42px", borderRadius: "50%", border: "1px dashed #00f0ff", position: "absolute" }}></div>
+              <div style={{
+                width: "20px",
+                height: "20px",
+                borderRadius: "50%",
+                background: swRunning ? "#00ff88" : "rgba(0, 255, 136, 0.2)",
+                boxShadow: swRunning ? "0 0 15px #00ff88" : "none",
+                transition: "0.3s"
+              }}></div>
+            </div>
+          </div>
+
+          {/* Countdown Timer */}
+          <div className="card-neon glow-pink" style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+            <div>
+              <span style={{ color: "#ff9900", fontSize: "12px", fontWeight: "bold" }}>⏳ TIMER</span>
+              <h2 style={{ fontFamily: "Orbitron", fontSize: "18px", margin: "4px 0", color: "#fff" }}>
+                {formatTimer(timerLeft)}
+              </h2>
+              <div style={{ display: "flex", gap: "4px", marginBottom: "4px" }}>
+                {[15, 25, 30].map((m) => (
+                  <button
+                    key={m}
+                    className={`preset-btn ${timerPreset === String(m) ? "active" : ""}`}
+                    onClick={() => {
+                      playBeep();
+                      setTimerRunning(false);
+                      setTimerPreset(String(m));
+                      setTimerLeft(m * 60);
+                    }}
+                  >
+                    {m}m
+                  </button>
+                ))}
+                <button className="preset-btn" onClick={handleCustomTimer}>
+                  Custom
+                </button>
+              </div>
+              <div style={{ display: "flex", gap: "6px" }}>
+                <button className="btn-neon bg-neon-orange" onClick={() => { playBeep(); setTimerRunning(!timerRunning); }}>
+                  {timerRunning ? "Pause" : "Start"}
+                </button>
+                <button className="btn-neon bg-outline" onClick={() => {
+                  playBeep();
+                  setTimerRunning(false);
+                  setTimerLeft(25 * 60);
+                  setTimerPreset("25");
+                }}>
+                  Reset
+                </button>
+              </div>
+            </div>
+            <div className="circle-timer-ring">
+              {pad(Math.floor(timerLeft / 60))}:{pad(timerLeft % 60)}
+            </div>
+          </div>
+
+          {/* Alarms with Switch Toggles */}
+          <div className="card-neon glow-purple">
+            <div style={{ display: "flex", justifyContent: "space-between", color: "#c084fc", fontSize: "12px", fontWeight: "bold" }}>
+              <span>🔔 ALARM</span>
+              <span style={{ color: "#00ff88", cursor: "pointer" }} onClick={handleAddAlarm}>+ Add Alarm</span>
+            </div>
+            {alarms.slice(0, 2).map((al) => (
+              <div key={al.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "4px" }}>
+                <div>
+                  <h3 style={{ fontFamily: "Orbitron", fontSize: "14px", color: al.active ? "#fff" : "#64748b" }}>{al.time}</h3>
+                  <p style={{ fontSize: "9px", color: "#94a3b8" }}>{al.label}</p>
+                </div>
+                <div
+                  className={`neon-switch ${al.active ? "active" : ""}`}
+                  onClick={() => {
+                    playBeep();
+                    setAlarms(alarms.map((a) => (a.id === al.id ? { ...a, active: !a.active } : a)));
                   }}
                 >
-                  12H
-                </button>
+                  <div className="switch-dot"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
 
-                <button
-                  onClick={() => setIs24Hour(true)}
-                  style={{
-                    padding: '2px 8px',
-                    background: is24Hour
+        {/* Footer with Created with ❤️ by Yash */}
+        <footer className="footer-container">
+          <div style={{ color: "#64748b" }}>
+            © 2026 Bharat Clock. All rights reserved. 🇮🇳
+          </div>
+          <div className="quote-text">
+            ❝ *समय सबसे कीमती दौलत है, इसे सही दिशा में निवेश करें।* ❞
+          </div>
+          <div className="creator-badge">
+            Created with <span className="heart">❤️</span> by <strong className="creator-name">Yash</strong>
+          </div>
+        </footer>
+      </main>
+    </div>
+  );
+}
